@@ -1,11 +1,9 @@
 import Validations from "../../../core/validations/validations";
-import { SubscribeService2 } from "src/services/subscribe-service";
 
-let array: any = [];
-let object = {
+const object = {
   discount_code: "required",
   quantity_id: "dropdown",
-  description: "description"
+  description: "description",
 };
 // SubscribeService2.getMessage2().subscribe((data: any) => {
 //   if (data) {
@@ -26,14 +24,14 @@ let object = {
 
 export const messages = {
   quantity_id: {
-    dropdown: "Please select  Quantity"
+    dropdown: "Please select  Quantity",
   },
   description: {
-    description: 'Give Description'
+    description: "Give Description",
   },
   discount_code: {
-    required: "Please enter Discount Code"
-  }
+    required: "Please enter Discount Code",
+  },
 };
 
 export const addDiscountValidations = Validations(object, messages);

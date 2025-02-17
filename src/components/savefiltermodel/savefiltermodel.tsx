@@ -1,6 +1,6 @@
-import React, {useState, Fragment, useEffect, useRef} from 'react';
-import { Formik } from 'formik';
-import CrossLogo from '../../assets/images/cross.svg';
+/* eslint-disable no-use-before-define */
+import { useState, useEffect, useRef } from "react";
+import { Formik } from "formik";
 import {
   PiInputForm,
   PiTypography,
@@ -10,28 +10,38 @@ import {
   PiModalBody,
   PiModalFooter,
   PiSelectForm,
-} from 'pixel-kit';
+  PiSpinner,
+} from "pixel-kit";
 import {
   FilterColumnProps,
   ApiResponse,
   UserListProps,
   SubmitFilterProps,
-} from 'src/services/schema/schema';
-import {triggerApi} from 'src/services/api-services';
-import EndpointUrl from 'src/core/apiEndpoints/endPoints';
-import {profileSchema} from 'src/modules/contacts/validation/contactValidation';
-import {FilterFormFields} from 'src/components/savefiltermodel/savefiltermodel.component';
-import {CloseButton} from '../adminaddrowmodel/adminaddrowmodel.component';
-import { PopupHeaderDiv } from '../fileuploadModel/fileuploadModel.component';
+} from "@app/services/schema/schema";
+import { triggerApi } from "@app/services/api-services";
+import EndpointUrl from "@app/core/apiEndpoints/endPoints";
+import { profileSchema } from "@app/modules/contacts/validation/contactValidation";
+import {
+  AssinToContainer,
+  FilterFormFields,
+  PiModalBodyMainContainer,
+  SaveFilterFieldContainer,
+} from "@app/components/savefiltermodel/savefiltermodel.component";
+import CrossLogo from "../../assets/images/cross.svg";
+import { CloseButton } from "../adminaddrowmodel/adminaddrowmodel.component";
+import {
+  PopupHeaderContentDiv,
+  PopupHeaderDiv,
+  SpinnerDiv,
+} from "../fileuploadModel/fileuploadModel.component";
 
 type Props = {
-  data: boolean;
-  onChildClick: (e: SubmitFilterProps) => {};
+  label: string;
+  onChildClick: any;
 };
 
-export default function SaveFilterModel({ data, onChildClick }: Props) {
+export default function SaveFilterModel({ label, onChildClick }: Props) {
   const [openModel, setOpenModel] = useState(false);
-  // console.log(data);
   // console.log(userList);
   // userList = Promise.resolve(userList).then(function(results) {
   //   console.log(results);
@@ -44,142 +54,110 @@ export default function SaveFilterModel({ data, onChildClick }: Props) {
   const formik = useRef<any>(null);
   // console.log(formik);
   const initialValues = {
-    filter_name: '',
+    filter_name: "",
     user_ids: [],
   };
   function handleSubmit(data: SubmitFilterProps) {
-    console.log(data);
-
     let filterNames: Array<any> = [];
     if (data.user_ids.length) {
-      filterNames = data.user_ids.map((obj: UserListProps) => {
-        return obj.value;
-      });
+      filterNames = data.user_ids.map((obj: UserListProps) => obj.value);
     }
 
     // console.log(data.user_ids);
     // console.log(filterNames, data);
     // delete data.user_ids;
-    data = {
+    const obj = {
       filter_name: data.filter_name,
       user_ids: filterNames,
     };
-    onChildClick(data);
+    onChildClick(obj);
   }
   function handleRef(e: any) {
-    console.log(e);
-
     formik.current = e;
   }
   function closeModel() {
     // console.log(222);
     setOpenModel(false);
-    let data = {
-      filter_name: '',
+    const data = {
+      filter_name: "",
       user_ids: [],
     };
     onChildClick(data);
   }
   return (
-    <Fragment>
-      <PiModal isOpen={openModel}>
+    <PiModal isOpen={openModel}>
+      <PopupHeaderContentDiv>
         <PiModalHeader>
           <PopupHeaderDiv>
-          {/* <HeaderText> */}
-            {
-              <CloseButton
-                onClick={() => closeModel()}
-                title="close"
-                className="Hover"
-              >
-                {' '}
-                <img src={CrossLogo} alt="loading"></img>{' '}
-              </CloseButton>
-            }
-            <PiTypography component="h4">Save View</PiTypography>
-            <hr />
-          {/* </HeaderText> */}
+            <PiTypography component="h3">Save View</PiTypography>
+            <CloseButton
+              onClick={() => closeModel()}
+              title="close"
+              className="Hover"
+            >
+              {" "}
+              <img src={CrossLogo} alt="loading" />{" "}
+            </CloseButton>
           </PopupHeaderDiv>
         </PiModalHeader>
-        <PiModalBody>
-          {/* <PiForm
-            initialValues={initialValues}
-            validationSchema={null}
-            handleSubmit={handleSubmit}
-            component={FilterForm}
-            handleRef={handleRef}
-          ></PiForm> */}
+        <hr />
+      </PopupHeaderContentDiv>
 
-          <Formik
-            validationSchema={profileSchema}
-            onSubmit={handleSubmit}
-            initialValues={initialValues}
-            innerRef={handleRef}
-          >
-            {({ ...formik }: any) => {
-              return (
-                <>
-                  <FilterForm />
-                  <PiModalFooter>
-                    <PiButton
-                      appearance="secondary"
-                      label="Cancel"
-                      onClick={closeModel}
-                    />
-                    <PiButton
-                      appearance="primary"
-                      label="Create"
-                      onClick={formik.handleSubmit}
-                    />
-                  </PiModalFooter>
-                </>
-              );
-            }}
-          </Formik>
-        </PiModalBody>
-      </PiModal>
-    </Fragment>
+      <Formik
+        validationSchema={profileSchema}
+        onSubmit={(e: any) => handleSubmit(e)}
+        initialValues={initialValues}
+        innerRef={(e: any) => handleRef(e)}
+      >
+        {({ ...formikProps }: any) => (
+          <>
+            <PiModalBodyMainContainer>
+              <PiModalBody>
+                <SaveFilterFieldContainer>
+                  <FilterForm label={label} />
+                </SaveFilterFieldContainer>
+              </PiModalBody>
+            </PiModalBodyMainContainer>
+
+            <PiModalFooter>
+              <PiButton
+                appearance="secondary"
+                label="Cancel"
+                onClick={() => closeModel()}
+              />
+              <PiButton
+                appearance="primary"
+                label="Create"
+                onClick={formikProps.handleSubmit}
+              />
+            </PiModalFooter>
+          </>
+        )}
+      </Formik>
+    </PiModal>
   );
 }
 
-const FilterForm = () => {
-  // console.log(onChildClick);
-
-  // userList = Promise.resolve(userList).then(function(results) {
-  //   console.log(results);
-  //   return results.users;
-  // });
-  // console.log(userList);
-  let [usersList, setusersList] = useState([]);
-  //let [userlistResponse, setUserlistResponse] = useState([]);
-
-  useEffect(() => {
-    getFilterData();
-  }, []);
+function FilterForm({ label }: any) {
+  const [loading, setloading] = useState(true);
+  const [usersList, setusersList] = useState([]);
   function getFilterData() {
     let arr = [];
     const apiObject = {
       payload: {},
-      method: 'GET',
-      apiUrl: `${EndpointUrl.filterDataApi}?name=contacts`,
+      method: "GET",
+      apiUrl: `${EndpointUrl.filterDataApi}?name=${label.toLowerCase()}`,
       headers: {},
     };
     triggerApi(apiObject)
       .then((response: ApiResponse) => {
         if (response.result.success) {
-          let list = response.result.data.users;
-          console.log(list);
-          // if (list.length) {
-          //   list.unshift({ id: "all", name: "Select All" });
-          // }
-          //setUserlistResponse(list);
-          arr = list.map((item: FilterColumnProps) => {
-            return {
-              value: item.id,
-              label: item.name,
-            };
-          });
-          // arr = usersList;
+          setloading(false);
+          const list = response.result.data.users;
+          arr = list.map((item: FilterColumnProps) => ({
+            value: item.id,
+            label: item.name || "No Name",
+          }));
           setusersList(arr);
         }
       })
@@ -187,24 +165,39 @@ const FilterForm = () => {
         console.log(err);
       });
   }
+  useEffect(() => {
+    getFilterData();
+  }, []);
 
   return (
     <FilterFormFields>
-      <PiInputForm
-        name="filter_name"
-        label="Filter Name"
-        libraryType="atalskit"
-        type="text"
-        placeholder="Filter Name"
-      />
-
-      <PiSelectForm
-        name="user_ids"
-        label="Assign To"
-        placeholder="Select"
-        isMulti={true}
-        options={usersList}
-      />
+      {loading && (
+        <SpinnerDiv>
+          <PiSpinner color="primary" size={50} libraryType="atalskit" />
+        </SpinnerDiv>
+      )}
+      {!loading && (
+        <>
+          <PiInputForm
+            name="filter_name"
+            label="Filter Name"
+            libraryType="atalskit"
+            type="text"
+            placeholder="Enter Filter Name"
+            isMandatory
+          />
+          <AssinToContainer id="456">
+            <PiSelectForm
+              name="user_ids"
+              label="Assign To"
+              placeholder="Select"
+              isMulti
+              options={usersList}
+              classNamePrefix="react-select"
+            />
+          </AssinToContainer>
+        </>
+      )}
     </FilterFormFields>
   );
-};
+}

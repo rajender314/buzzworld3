@@ -1,12 +1,10 @@
-import { Fragment } from "react";
-import React from "react";
+/* eslint-disable react/jsx-props-no-spreading */
+import CommonLayout from "@app/components/commonLayout";
+import { sideList } from "@app/modules/organisations/component/organisationRenderdata";
+import { PageProps } from "@app/services/schema/schema";
+import EndpointUrl from "@app/core/apiEndpoints/endPoints";
+import ContactImg from "@app/assets/images/contact.svg";
 
-import CommonLayout from "src/components/commonLayout";
-import { sideList } from "src/modules/organisations/component/organisationRenderdata";
-import { PageProps } from "src/services/schema/schema";
-import EndpointUrl from "src/core/apiEndpoints/endPoints";
-
-import ContactImg from "src/assets/images/contact.svg";
 export default function Contacts() {
   const props: PageProps = {
     pageLabel: "Contacts",
@@ -15,12 +13,8 @@ export default function Contacts() {
     pageLogo: ContactImg,
     apiData: {
       apiUrl: "",
-      params: {}
-    }
+      params: {},
+    },
   };
-  return (
-    <Fragment>
-      <CommonLayout {...props}></CommonLayout>
-    </Fragment>
-  );
+  return <CommonLayout {...props} />;
 }

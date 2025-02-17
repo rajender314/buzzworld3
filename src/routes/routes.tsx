@@ -1,45 +1,26 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, { Suspense, lazy, useEffect, useState } from 'react'
+import {
+  lazy, Suspense, useEffect, useState,
+} from 'react';
 import {
   BrowserRouter as Router,
   Switch,
   Route,
   Redirect,
-} from 'react-router-dom'
+} from 'react-router-dom';
 
-import Loader from 'src/components/Loader/loader'
-import CommmonHeader from 'src/components/commonHeader'
-
-// import Industry from "src/modules/industry/component/industry";
-
-// import Orders from "src/modules/orders/component";
-// import Repairs from "../modules/repairs/component/repairs";
-
-import Langugae from '../core/language/language'
+import { LicenseManager } from 'ag-grid-enterprise';
+import Cookies from 'js-cookie';
 import {
   // setLocalStorage,
   getLocalStorage,
   // removeLocalStorage
-} from 'src/core/localStorage/localStorage'
-const Organisations = lazy(() => import('src/modules/organisations/component'))
+} from '@app/core/localStorage/localStorage';
+// import Layout from './layout'
+import Authorization from '@app/modules/authentication/component';
 
-const Contacts = lazy(() => import('src/modules/contacts/component'))
-const AccountTypes = lazy(() => import('src/modules/accountTypes/component'))
-const Classification = lazy(() =>
-  import('src/modules/classification/component'),
-)
-const Industry = lazy(() => import('src/modules/industry/component'))
-const SalesPotential = lazy(() =>
-  import('src/modules/salesPotential/component'),
-)
-const ContactTypes = lazy(() => import('src/modules/contactTypes/component'))
-const PoMinQty = lazy(() => import('src/modules/poMinQty/component'))
-const Pricing = lazy(() => import('src/modules/vendor/component'))
-const SpecialPricing = lazy(() =>
-  import('src/modules/specialPricing/component'),
-)
-const DiscountCodes = lazy(() => import('src/modules/discountCodes/component'))
-const Authorization = lazy(() => import('src/modules/authentication/component'))
+const Layout = lazy(() => import('@app/routes/layout'));
+
+LicenseManager.setLicenseKey(`${process.env.REACT_APP_AG_LICENCE_KEY}` || '');
 
 /*  eslint "require-jsdoc": ["error", {
       "require": {
@@ -53,67 +34,45 @@ const Authorization = lazy(() => import('src/modules/authentication/component'))
  * @return {void}
  */
 export default function Routes() {
-  let [token, setToken] = useState('')
+  const [token, setToken]: any = useState('');
 
   // const authorizationUrl = "https://ssodev-iidm.enterpi.com:8443/Login";
   useEffect(() => {
-    token = getLocalStorage('token') as string
-    setToken(token)
-    console.log(token)
-    // const location = useLocation();
-    console.log(window.location.pathname)
-  }, [])
-  const routes = [
-    {
-      path: '/organisations',
-      component: Organisations,
-    },
+    const value = getLocalStorage('token');
+    setToken(value);
+  }, []);
 
-    {
-      path: '/contacts',
-      component: Contacts,
-    },
-    {
-      path: '/account-type',
-      component: AccountTypes,
-    },
-    {
-      path: '/classification',
-      component: Classification,
-    },
-    {
-      path: '/industry',
-      component: Industry,
-    },
-    {
-      path: '/sales_potential',
-      component: SalesPotential,
-    },
-    {
-      path: '/contact_types',
-      component: ContactTypes,
-    },
-    {
-      path: '/po_min_qty',
-      component: PoMinQty,
-    },
-    {
-      path: '/language',
-      component: Langugae,
-    },
-    {
-      path: '/pricing',
-      component: Pricing,
-    },
-    {
-      path: '/discount-codes',
-      component: DiscountCodes,
-    },
-    {
-      path: '/special-pricing',
-      component: SpecialPricing,
-    },
-  ]
+  /*  eslint "require-jsdoc": ["error", {
+      "require": {
+          "FunctionDeclaration": true,
+          "ArrowFunctionExpression": true,
+          "FunctionExpression": true
+    }
+}]  */
+
+  /**
+   * @return {void}
+   */
+
+  console.log(Cookies.get('smartRoute'));
+  /**
+   * @return {string}
+   */
+  function getLandingRoute(): any {
+    const userInfo = getLocalStorage('userPermission')
+      ? JSON.parse(getLocalStorage('userPermission') || '')
+      : null;
+    if (window.location.pathname.substring(1).split('/')[0]) {
+      return window.location.pathname;
+    }
+    if (userInfo && userInfo.user_type === '1') {
+      return userInfo.default_route || 'pricing';
+    }
+    if (userInfo && userInfo.user_type === '2') {
+      return 'quote_for_parts';
+    }
+    return true;
+  }
 
   return (
     <Router>
@@ -126,30 +85,27 @@ export default function Routes() {
                   <Authorization />
                 </Suspense>
               </Route>
-            )
-          } else {
-            return (
-              <>
-                <Redirect
-                  exact
-                  from="/"
-                  to={
-                    window.location.pathname.length > 1
-                      ? window.location.pathname
-                      : '/pricing'
-                  }
-                />
-                <CommmonHeader></CommmonHeader>
+            );
+          }
+          return (
+            <>
+              <Redirect exact from="/" to={getLandingRoute()} />
+              {/* <CommmonHeader sendEventData={triggerEvent}></CommmonHeader>
                 {routes.map((route, i) => (
                   <Route exact path={route.path} key={i}>
                     <Suspense fallback={null}>
-                      <route.component />
+                      {route.type === 'repairs' && (
+                        <route.component flag={rmaFlag} />
+                      )}
+                      {route.type !== 'repairs' && <route.component />}
                     </Suspense>
                   </Route>
-                ))}
-              </>
-            )
-          }
+                ))} */}
+              <Suspense fallback={null}>
+                <Layout />
+              </Suspense>
+            </>
+          );
         })()}
         {/* <Redirect exact from="/" to="/organisations" />
         {token && <Authorization />}
@@ -163,5 +119,5 @@ export default function Routes() {
         ))} */}
       </Switch>
     </Router>
-  )
+  );
 }

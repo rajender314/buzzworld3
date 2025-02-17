@@ -17,7 +17,7 @@ export function toParams(query: string) {
   return q.split('&').reduce((values: object, param: string) => {
     const [key, value] = param.split('=');
 
-    return {...values, [key]: decodeURIComponent(value)};
+    return { ...values, [key]: decodeURIComponent(value) };
   }, {});
 }
 /**
@@ -31,7 +31,7 @@ export function toQuery(params: any, delimiter = '&') {
   return keys.reduce((str, key, index) => {
     let query = `${str}${key}=${params[key]}`;
 
-    if (index < (keys.length - 1)) {
+    if (index < keys.length - 1) {
       query += delimiter;
     }
 

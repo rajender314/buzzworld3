@@ -1,1 +1,4 @@
-export {default} from './language'
+// export { default } from './language';
+import Language from "./language";
+
+export default Language;

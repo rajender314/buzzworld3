@@ -1,1 +1,4 @@
-export { default } from "./organisation";
+// export { default } from './organisation';
+import Organisations from "./organisation";
+
+export default Organisations;

@@ -1,1 +1,4 @@
-export { default } from './fileuploadmodel'
+// export { default } from './fileuploadmodel';
+import FileUploadModel from "./fileuploadmodel";
+
+export default FileUploadModel;

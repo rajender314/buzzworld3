@@ -1,10 +1,8 @@
-import { Fragment } from "react";
-import React from "react";
-
-import CommonLayout from "src/components/commonLayout";
+/* eslint-disable react/jsx-props-no-spreading */
+import CommonLayout from "@app/components/commonLayout";
+import EndpointUrl from "@app/core/apiEndpoints/endPoints";
+import OrganisationImg from "@app/assets/images/organisation.svg";
 import { sideList } from "./organisationRenderdata";
-import EndpointUrl from "src/core/apiEndpoints/endPoints";
-import OrganisationImg from "src/assets/images/organisation.svg";
 
 export default function Organisations() {
   const props = {
@@ -14,12 +12,8 @@ export default function Organisations() {
     pageLogo: OrganisationImg,
     apiData: {
       apiUrl: "v1/Organizations",
-      params: {}
-    }
+      params: {},
+    },
   };
-  return (
-    <Fragment>
-      <CommonLayout {...props}></CommonLayout>
-    </Fragment>
-  );
+  return <CommonLayout {...props} />;
 }

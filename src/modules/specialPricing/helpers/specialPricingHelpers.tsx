@@ -1,2 +1,1 @@
-import React from "react";
-export default function SpecialPricingHelpers() { }
+export default function SpecialPricingHelpers() {}

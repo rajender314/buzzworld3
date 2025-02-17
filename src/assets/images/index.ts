@@ -1,2 +1,1 @@
-export { default as StudentLogo } from "./student.svg";
-
+export { default } from './student.svg';

@@ -1,4 +1,6 @@
 import { ColumnState, ColDef } from "ag-grid-community";
+import { ReactNode } from "react";
+
 export type PayloadProps = {
   payload: object;
   method: string;
@@ -11,6 +13,13 @@ export type FilterColumnProps = {
   name: string;
   filter_name?: string;
   discount_code?: string;
+  address1?: string;
+  account_number?: string;
+  total_price?: string;
+  code?: string;
+  vendor_stock_key?: string;
+  dynamics_code?: string;
+  zipcode?: string;
 };
 export type EditFilterColumnProps = {
   id: number;
@@ -19,12 +28,26 @@ export type EditFilterColumnProps = {
   description: string;
   filter_name?: string;
 };
+export type FilterDataObject = {
+  columnsStateData: ColumnState[];
+  fltrstate: any;
+  leftkey: string;
+  pageNumber?: number;
+  pageNo: number;
+  searchkey: string;
+};
 export type EditProps = {
   name: string;
   description: string;
   status: string;
   quantity: string;
   filter_data?: FilterDataObject;
+  mapping_accountype_id?: any;
+  account_type_mapped_with?: any;
+  code?: string;
+  is_different_pricing?: any;
+  pos_mail?: any;
+  pos_test_mail?: any;
 };
 export type SaveFilterProps = {
   filter_name: string;
@@ -38,40 +61,36 @@ export type AddFilterProps = {
   filter_data?: FilterDataObject;
 };
 
-export type FilterDataObject = {
-  columnsStateData: ColumnState[];
-  fltrstate: any;
-  leftkey: string;
-  pageNumber: number;
-  searchkey: string;
-};
-
-export type PageProps = {
-  pageLabel: string;
-  sideNavData: SidenavProps[];
-  apiDataUrl: string;
-  pageLogo: string;
-  apiData: ApiDataProps;
-};
-
-export type ApiDataProps = {
-  apiUrl: string;
-  params: object;
-};
-
 export type SidenavProps = {
   key: string;
   label: string;
 };
-
-export type ApiResponse = {
-  result: ApiResponseProps;
+export type ApiDataProps = {
+  apiUrl: string;
+  params: object;
+};
+export type PageProps = {
+  pageLabel: string;
+  displayLabel?: string;
+  gridName?: string;
+  sideNavData?: SidenavProps[];
+  apiDataUrl: string;
+  pageLogo: string;
+  flag?: boolean;
+  apiData: ApiDataProps;
+  userId?: any;
+  isOpenModel?: boolean;
+  routeLabel?: string;
 };
 export type ApiResponseProps = {
   data: any;
   message: string;
   status_code: number;
   success: boolean;
+  is_override_popup?: boolean;
+};
+export type ApiResponse = {
+  result: ApiResponseProps;
 };
 
 export type GridfilterData = {
@@ -146,11 +165,20 @@ export type UserListProps = {
   label: string;
 };
 export type AddProps = {
+  pos_mail?: any;
+  pos_test_mail?: any;
   name: string;
   description: string;
   status: string;
   quantity: string;
   filter_data?: FilterDataObject;
+  mapping_accountype_id?: any;
+  code?: string;
+  supplier_name?: any;
+  supplier_code?: any;
+  errors?: any;
+  isValid?: any;
+  is_different_pricing?: boolean;
 };
 export type EditFilterProps = {
   name: string;
@@ -172,8 +200,9 @@ export type PiMenuOptions = {
   children?: MenuOptions[];
   key: string;
   label: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   href?: string;
+  id?: string;
 };
 
 export type BranchListProps = {
@@ -199,7 +228,7 @@ export type AccountTypeData = {
 };
 export type ColumnDataProps = {
   column_data: ColDef[];
-}
+};
 export type AccountTypePricing = {
   column_data: ColDef[];
   acc_type_pricelist: AccountTypeData[];
@@ -211,19 +240,20 @@ export type AccountTypePricing = {
   name: string;
   vendor_id: string;
 };
+export type BodyProps = {
+  branch_id?: string;
+  vendor_id?: string;
+  quantity_id?: string;
+  vendor_name?: string;
+};
+export type ReqInfoHeaderProps = {
+  Authorization: string;
+};
 export type ReqInfoProps = {
   body: BodyProps;
   headers: ReqInfoHeaderProps;
   method: string;
   url: string;
-};
-export type BodyProps = {
-  branch_id?: string;
-  vendor_id?: string;
-  quantity_id?: string;
-};
-export type ReqInfoHeaderProps = {
-  Authorization: string;
 };
 
 export type PiSelectProps = {
@@ -239,10 +269,10 @@ export type SubscribeProps = {
   data: ReqInfoProps;
 };
 export type AxiosProps = {
-  method:string;
-  url: string,
-  data: object,
-  headers?: object,
+  method: string;
+  url: string;
+  data: object;
+  headers?: object;
 };
 
 export type RowDataProps = {
@@ -251,18 +281,24 @@ export type RowDataProps = {
   description: string;
   status: string;
   quantity: string;
-}
+};
 
 export type PricingAddRowProps = {
   manufacturer_discount_id: string;
   stock_code: string;
   list_price: string;
   description: string;
-}
+};
 
 export type BranchSelectProps = {
   id: string;
   name: string;
   label: string;
   value: string;
-}
+};
+export type DropdownLabelProps = {
+  id?: string;
+  name: string;
+  label: string;
+  value: string;
+};

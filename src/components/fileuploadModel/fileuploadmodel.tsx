@@ -1,7 +1,7 @@
-import React, { useState, Fragment, useEffect } from 'react'
-import ErrorIcon from '@atlaskit/icon/glyph/error'
-import ArrowLeftIcon from '@atlaskit/icon/glyph/arrow-left'
-import { GridReadyEvent } from 'ag-grid-community'
+import { useState, useEffect, useRef } from "react";
+import ErrorIcon from "@atlaskit/icon/glyph/error";
+import ArrowLeftIcon from "@atlaskit/icon/glyph/arrow-left";
+import { GridReadyEvent } from "ag-grid-community";
 import {
   PiTypography,
   PiModal,
@@ -15,19 +15,14 @@ import {
   PiDatePicker,
   PiLabelName,
   PiGrid,
-} from 'pixel-kit'
+  PiSpinner,
+} from "pixel-kit";
 import {
-  UploadModalTitle,
-  UploadImgDiv,
   UploadNote,
-  UploadIcon,
   UploadDiv,
-  InputEle,
-  BrowseBtn,
   ErrorLogDiv,
   ErrorlogPanel,
   DragSection,
-  UploadIconNext,
   ProductsListDiv,
   DatePickerDiv,
   RowContainer,
@@ -40,275 +35,294 @@ import {
   TextEle,
   PopupHeaderDiv,
   ImportPopupContainer,
-} from 'src/components/fileuploadModel/fileuploadModel.component'
+  ImportFileFooter,
+  PricingDisclaimer,
+  SpinnerDiv,
+  DownloadIconContainer,
+} from "@app/components/fileuploadModel/fileuploadModel.component";
 import {
   ApiResponse,
   BranchListProps,
-  ReqInfoProps,
   UserListProps,
-} from 'src/services/schema/schema'
-import crossImg from 'src/assets/images/cross.svg'
-import uploadImg from 'src/assets/images/upload.svg'
-import { triggerApi } from 'src/services/api-services'
-import EndpointUrl from 'src/core/apiEndpoints/endPoints'
+} from "@app/services/schema/schema";
+import crossImg from "@app/assets/images/cross.svg";
+
+import { triggerApi, token } from "@app/services/api-services";
+import EndpointUrl from "@app/core/apiEndpoints/endPoints";
+import { AsyncSelect } from "@atlaskit/select";
+import { getFilterSupplierData } from "@app/helpers/helpers";
+import DownLoad from "@app/assets/images/download-doc.svg";
 import {
   ExportIconPopup,
   ExportIconPopupHeader,
-} from '../secondaryheader/secondaryheader.component'
+} from "../secondaryheader/secondaryheader.component";
 import {
   CloseButton,
   HeaderText,
-} from '../adminaddrowmodel/adminaddrowmodel.component'
-import { getLocalStorage } from 'src/core/localStorage/localStorage'
+} from "../adminaddrowmodel/adminaddrowmodel.component";
+import FileUploadElement from "./file-upload-element";
+import { AsyncLabel } from "../rmaModel/RmaModel.component";
+
 type Props = {
-  //reqInfo: ReqInfoProps
-  onFileSelect: (e?: any) => {}
-}
+  // reqInfo: ReqInfoProps
+  onFileSelect: any;
+  // vendorName: any
+};
 
 export default function FileUploadModel({ onFileSelect }: Props) {
-  const [openModel, setOpenModel] = useState(false)
-  let [headerLabel, setHeaderLabel] = useState<string>('Upload Files')
+  const [openModel, setOpenModel] = useState(false);
+  const [headerLabel, setHeaderLabel] = useState<string>("Upload Files");
   // const [progressState, setProgressState] = useState(0);
-  let [fileValidationError, setFileValidationError] = useState('')
-  const [discountData, setDiscountData] = useState({})
-  const [pricingdata, setPricingData] = useState({})
-  const [isBtnLoading, setIsBtnLoading] = useState(false)
-  const [errorLogMsg, setErrorLogMsg] = useState('')
-  const [prodUpdatedMsg, setProdUpdatedMsg] = useState('')
-  const [prodAddedMsg, setProdAddedMsg] = useState('')
-  const [addProductsList, setAddProductsList] = useState([])
-  const [UpdatedproductsList, setUpdatedProductsList] = useState([])
-  let [discountProductsMsg, setDiscountProductsMsg] = useState<string>('')
-  const [fileName, setFileName] = useState('')
-  const [
-    openImportingDataPopupModel,
-    setOpenImportingDataPopupModel,
-  ] = useState(false)
-  const [priceFileName, setPriceFileName] = useState('')
-  const [TodayDate, SetTodayDate] = useState('')
-  const [minDate, setMinDate] = useState('')
-
-  let gridEvent: GridReadyEvent
-  let [rowLength, setRowLength] = useState(0)
-  let [pricingFileValidationError, setPricingFileValidationError] = useState('')
-  let reqInfo: ReqInfoProps
-  let data: any = getLocalStorage('requestInfo')
-  //if(data) {
-  reqInfo = JSON.parse(data)
-  console.log(reqInfo)
-  //}
-  useEffect(() => {
-    function formatDate(date: Date) {
-      var d = new Date(date),
-        month = '' + (d.getMonth() + 1),
-        day = '' + d.getDate(),
-        year = d.getFullYear()
-
-      if (month.length < 2) month = '0' + month
-      if (day.length < 2) day = '0' + day
-
-      return [year, month, day].join('-')
-    }
-    SetTodayDate(formatDate(new Date()))
-
-    setOpenModel(true)
-    getBranchList()
-    console.log(reqInfo)
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const onGridReady = async (params: GridReadyEvent) => {
-    // setReady(false);
-    gridEvent = params
-    console.log(gridEvent)
-    // params.api.purgeServerSideCache([]);
-    // params.api.showLoadingOverlay();
-    // if (props.pageLabel !== "Pricing" && props.pageLabel !== "Discount_Codes") {
-    //   setStateManagement();
-  }
-
-  let [branchList, setBranchList] = useState<Array<UserListProps>>([])
+  const [fileValidationError, setFileValidationError] = useState("");
+  const [discountData, setDiscountData] = useState({});
+  const [pricingdata, setPricingData] = useState({});
+  const [isBtnLoading, setIsBtnLoading] = useState(false);
+  const [errorLogMsg, setErrorLogMsg] = useState("");
+  const [prodUpdatedMsg, setProdUpdatedMsg] = useState("");
+  const [prodAddedMsg, setProdAddedMsg] = useState("");
+  const [addProductsList, setAddProductsList] = useState([]);
+  const [UpdatedproductsList, setUpdatedProductsList] = useState([]);
+  const [discountProductsMsg, setDiscountProductsMsg] = useState<string>("");
+  const [fileName, setFileName] = useState("");
+  const [openImportingDataPopupModel, setOpenImportingDataPopupModel] =
+    useState(false);
+  const [priceFileName, setPriceFileName] = useState("");
+  const [TodayDate, SetTodayDate] = useState("");
+  const [minDate, setMinDate] = useState("");
+  const { current }: any = useRef({ timer: 0 });
+  let gridEvent: GridReadyEvent;
+  const [rowLength, setRowLength] = useState(0);
+  const [pricingFileValidationError, setPricingFileValidationError] =
+    useState("");
+  const [serverMsg, setServerMsg] = useState<any>(null);
+  const [branchList, setBranchList] = useState<Array<UserListProps>>([]);
+  const [branchValue, setBranchValue]: any = useState(null);
+  const [disableProceed, setDisableProceed] = useState(true);
+  const [viewMoreBtn, setviewMoreBtn] = useState("View-More");
+  const [loader, setLoader] = useState(false);
+  const [discountChecked, setDiscountChecked] = useState(false);
+  const [pricingChecked, setPricingChecked] = useState(false);
+  const [serverError, setServerError] = useState(null);
+  const [isStartDate, setIsStartdate] = useState(false);
+  const [isEndDate, setIsEnddate] = useState(false);
+  const [priceTempTable, setPriceTempTable] = useState(null);
+  const [discountTempTable, setDiscountTempTable] = useState(null);
+  const [discountCodeParam, setDiscountCodeParam] = useState(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [pricingImgName, setPricingImgName] = useState("");
+  const [originalImgName, setOriginalImgName] = useState("");
+  const [sampleHeaders, setSampleHeaders] = useState([]);
+  const [uploadedErrors, setUploadedError] = useState([]);
+  const [errorType, setErrorType] = useState<string>("");
+  const [existingcode, setExistingcode] = useState<string>("");
+  const [uplpoadedcode, setUploadedcode] = useState<string>("");
+  const [errorLog, setErrorLog] = useState<string>("");
+  const [errorColumnData, setErrorColumnData] = useState([]);
+  const [errorRowData, setErrorRowData] = useState([]);
+  const [cloneRowData, setCloneRowData] = useState([]);
   function getBranchList() {
     const apiObject = {
       payload: {},
-      method: 'GET',
-      apiUrl: `${EndpointUrl.branchList}`,
+      method: "GET",
+      apiUrl: `${EndpointUrl.PricingBranches}?status[0]=true`,
       headers: {},
-    }
+    };
     triggerApi(apiObject)
       .then((response: ApiResponse) => {
         if (response.result.success) {
-          let branchList = response.result.data.list
+          let branchListdata = response.result.data.list;
 
-          let list = []
-          list = branchList.map((item: BranchListProps) => {
-            return {
-              label: item.name,
-              value: item.id,
-              ...item,
-            }
-          })
-          branchList = list
-          console.log(list)
-          setBranchList(branchList)
-          setTimeout(() => {}, 500)
-          setSelectedBrnch(list[0])
-          setBranchValue(list[0].id)
-          console.log(selectedBrnch)
+          let list = [];
+          list = branchListdata.map((item: BranchListProps) => ({
+            label: item.name,
+            value: item.id,
+            ...item,
+          }));
+          branchListdata = list;
+          setBranchList(branchListdata);
+          setTimeout(() => {}, 500);
+          setBranchValue(response.result.data.is_default);
         }
       })
       .catch((err: string) => {
-        console.log(err)
-      })
+        console.log(err);
+      });
   }
+  function getVendorList() {
+    const apiObject = {
+      payload: {},
+      method: "GET",
+      apiUrl: `${EndpointUrl.PricingAllVendors}`,
+      headers: {},
+    };
+    triggerApi(apiObject)
+      .then((response: ApiResponse) => {
+        if (response.result.success) {
+          let vendorList = response.result.data.list;
+
+          let list = [];
+          list = vendorList.map((item: BranchListProps) => ({
+            label: item.name,
+            value: item.id,
+            ...item,
+          }));
+          vendorList = list;
+          console.log(list);
+        }
+      })
+      .catch((err: string) => {
+        console.log(err);
+      });
+  }
+  useEffect(() => {
+    function formatDate(date: Date) {
+      const d = new Date(date);
+      let month = `${d.getMonth() + 1}`;
+      let day = `${d.getDate()}`;
+      const year = d.getFullYear();
+
+      if (month.length < 2) month = `0${month}`;
+      if (day.length < 2) day = `0${day}`;
+
+      return [year, month, day].join("-");
+    }
+    SetTodayDate(formatDate(new Date()));
+
+    setOpenModel(true);
+    getBranchList();
+    getVendorList();
+  }, []);
+
+  const onGridReady = async (params: GridReadyEvent) => {
+    gridEvent = params;
+  };
 
   function closeModel() {
-    // console.log(222);
-    setOpenModel(false)
-    onFileSelect({})
+    setOpenModel(false);
+    if (onFileSelect()) {
+      setOpenImportingDataPopupModel(false);
+    }
+    onFileSelect({});
   }
-  let [branchValue, setBranchValue] = useState(null)
-  let [selectedBrnch, setSelectedBrnch] = useState({
-    label: 'All',
-    value: 'e02b1134-6e8b-454c-aecc-69e91b2bf3ff',
-  })
-  let [isBranchSelect, setBranchSelect] = useState(false)
-  function selectBranch(e: any) {
-    setBranchSelect(false)
-    console.log(e, fileValidationError)
-    const target = { value: e.value, label: e.label }
 
-    let selectedBrnch = Object.assign({}, target)
-    setSelectedBrnch(selectedBrnch)
-    branchValue = e.id
-    setBranchValue(e.id)
-    // console.log(branchValue);
+  function selectBranch(e: any) {
+    setBranchValue(e);
 
     if (
-      (pricingFileValidationError === 'Pricing File Uploaded' && branchValue) ||
-      (fileValidationError === 'Discount File Uploaded' && branchValue)
+      (pricingFileValidationError === "Pricing File Uploaded" && branchValue) ||
+      (fileValidationError === "Discount File Uploaded" && branchValue)
     ) {
-      setDisableProceed(false)
+      setDisableProceed(false);
     } else {
-      setDisableProceed(true)
+      setDisableProceed(true);
     }
   }
-  let fileuploadStatus: boolean
+  const [selectedNewVendor, setSelectedNewVendor]: any = useState();
+  const selectVendor = (e: any) => {
+    setServerMsg(null);
+    if (e) {
+      const obj: any = {
+        value: e.id,
+        label: e.name,
+        is_different_pricing: e.is_different_pricing,
+      };
+      setSelectedNewVendor(obj);
+    } else {
+      setSelectedNewVendor(null);
+    }
+  };
+  let fileuploadStatus: boolean;
   function fileUpload(files: any, type: string) {
-    let formData
-    formData = new FormData()
+    setLoader(true);
+    const formData = new FormData();
 
-    formData.append(`files`, files[0])
-    formData.append(`type`, type)
+    formData.append("files", files[0]);
+    formData.append("type", type);
 
     const apiObject = {
       payload: formData,
-      method: 'POST',
+      method: "POST",
       apiUrl: `${EndpointUrl.uploadFileApi}`,
       headers: {},
-    }
+    };
     triggerApi(apiObject)
       .then((response: ApiResponse) => {
         if (response.result.success) {
-          if (type === 'discount') {
-            let obj = {
+          setLoader(false);
+          if (type === "discount") {
+            const obj = {
               ...response.result.data,
               is_append: discountChecked,
-            }
-            setDiscountData(obj)
-            setFileName(files[0].name)
-            fileValidationError = 'Discount File Uploaded'
-            setFileValidationError('Discount File Uploaded')
+            };
+            setDiscountData(obj);
+            setFileName(files[0].name);
+            setFileValidationError("Discount File Uploaded");
           }
-          if (type === 'pricing') {
-            let obj = {
+          if (type === "pricing") {
+            const obj = {
               ...response.result.data,
               is_append: pricingChecked,
-            }
-            setPricingData(obj)
-            setPriceFileName(files[0].name)
-            pricingFileValidationError = 'Pricing File Uploaded'
-            setPricingFileValidationError('Pricing File Uploaded')
+            };
+            setPricingData(obj);
+            setPriceFileName(files[0].name);
+            setPricingFileValidationError("Pricing File Uploaded");
           }
-          fileuploadStatus = true
+          fileuploadStatus = true;
 
-          setDisableProceed(false)
+          setDisableProceed(false);
+        } else {
+          setLoader(false);
         }
       })
       .catch((err: string) => {
-        console.log(err)
-      })
+        console.log(err);
+      });
 
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(fileuploadStatus)
-      }, 500)
-    })
-  }
-  let [disableProceed, setDisableProceed] = useState(true)
-  let [viewMoreBtn, setviewMoreBtn] = useState('View More')
-
-  async function onFileChange(event: any, filetype: string) {
-    console.log(event.target.files, filetype)
-
-    if (
-      event.target.files[0].type ===
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-      event.target.files[0].type === 'text/csv'
-    ) {
-      await fileUpload(event.target.files, filetype)
-    } else {
-      if (filetype === 'discount') {
-        setFileValidationError('Invalid File')
-      }
-      if (filetype === 'pricing') {
-        setPricingFileValidationError('Invalid File')
-      }
-    }
+        resolve(fileuploadStatus);
+      }, 500);
+    });
   }
 
   async function onDrop(files: any, filetype: string) {
-    console.log(files, filetype)
+    console.log(files, filetype);
     if (
       files[0].type ===
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-      files[0].type === 'text/csv'
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      files[0].type === "text/csv" ||
+      files[0].type === "application/vnd.ms-excel"
     ) {
       // setProgressState(0.8);
       if (files.length > 0) {
-        await fileUpload(files, filetype)
+        await fileUpload(files, filetype);
       }
     } else {
-      if (filetype === 'discount') {
-        setFileValidationError('Invalid File')
+      if (filetype === "discount") {
+        setFileValidationError("Invalid File");
       }
-      if (filetype === 'pricing') {
-        setPricingFileValidationError('Invalid File')
+      if (filetype === "pricing") {
+        setPricingFileValidationError("Invalid File");
       }
     }
   }
 
-  let [param, setParam]: any = useState()
-  let [discountChecked, setDiscountChecked] = useState(false)
-  let [pricingChecked, setPricingChecked] = useState(false)
-  let [serverError, setServerError] = useState(null)
   function proceed() {
     if (startDate.length === 0) {
-      setIsStartdate(true)
+      setIsStartdate(true);
     } else {
-      setIsStartdate(false)
+      setIsStartdate(false);
     }
     if (endDate.length === 0) {
-      setIsEnddate(true)
+      setIsEnddate(true);
     } else {
-      setIsEnddate(false)
+      setIsEnddate(false);
     }
 
     if (startDate.length !== 0 && endDate.length !== 0) {
-      setHeaderLabel('Import Data')
-      setOpenImportingDataPopupModel(true)
-      param = {
+      setHeaderLabel("Import Data");
+      const val: any = {
         discount_codes_data: discountCodeParam,
         price_list_data: {
           temp_table: priceTempTable,
@@ -316,250 +330,264 @@ export default function FileUploadModel({ onFileSelect }: Props) {
           image_name: pricingImgName,
           original_filename: originalImgName,
         },
-        vendor_id: reqInfo.body.vendor_id,
-        branch_id: branchValue,
+        vendor_id: selectedNewVendor.value,
+        branch_id: branchValue.value,
         start_date: startDate,
         end_date: endDate,
-      }
+      };
       if (discountTempTable === null) {
-        delete param.discount_codes_data
-
-        setParam(param)
+        console.log(val, 349);
+        delete val.discount_codes_data;
       }
       const apiObject = {
-        payload: param,
-        method: 'POST',
+        payload: val,
+        method: "POST",
         apiUrl: `${EndpointUrl.importProductsExcelApi}`,
         headers: {},
-      }
+      };
       triggerApi(apiObject).then((response: ApiResponse) => {
         if (response.result.success) {
-          setOpenModel(false)
+          setOpenModel(false);
+          setOpenImportingDataPopupModel(true);
         } else {
-          setServerError(response.result.data)
+          setServerError(response.result.data);
+          setOpenImportingDataPopupModel(false);
         }
-      })
+      });
     }
   }
-
-  const [priceTempTable, setPriceTempTable] = useState(null)
-  const [discountTempTable, setDiscountTempTable] = useState(null)
-  const [discountCodeParam, setDiscountCodeParam] = useState(null)
-  let [startDate, setStartDate] = useState('')
-  let [endDate, setEndDate] = useState('')
-  let [pricingImgName, setPricingImgName] = useState('')
-  let [originalImgName, setOriginalImgName] = useState('')
-  const [sampleHeaders, setSampleHeaders] = useState([])
-  const [uploadedErrors, setUploadedError] = useState([])
-  const [errorType, setErrorType] = useState<string>('')
-  const [existingcode, setExistingcode] = useState<string>('')
-  const [uplpoadedcode, setUploadedcode] = useState<string>('')
-  const [errorLog, setErrorLog] = useState<string>('')
-  const [errorColumnData, setErrorColumnData] = useState([])
-  const [errorRowData, setErrorRowData] = useState([])
-  const [cloneRowData, setCloneRowData] = useState([])
 
   function closeImportPopup() {
-    setOpenImportingDataPopupModel(false)
-    let param = {
-      vendor_id: reqInfo.body.vendor_id,
-      branch_id: branchValue,
-    }
-    onFileSelect(param)
+    setOpenImportingDataPopupModel(false);
+    const val = {
+      vendor_id: selectedNewVendor.value,
+      branch_id: branchValue.value,
+      vendor_name: selectedNewVendor.label,
+      type: "file_import",
+    };
+    onFileSelect(val);
   }
   function proceedToSummary() {
-    setIsBtnLoading(true)
-    let param = {
+    console.log(branchValue);
+    setLoader(true);
+    setIsBtnLoading(true);
+    if (!selectedNewVendor) {
+      setServerMsg("Please select Vendor");
+      setLoader(false);
+      setIsBtnLoading(false);
+      return;
+    }
+    setServerMsg(null);
+
+    const val = {
       discount_codes_data: discountData,
       price_list_data: pricingdata,
-      vendor_id: reqInfo.body.vendor_id,
-      branch_id: branchValue,
-    }
+      vendor_id: selectedNewVendor.value,
+      branch_id: branchValue ? branchValue.value : "",
+    };
     const apiObject = {
-      payload: param,
-      method: 'POST',
+      payload: val,
+      method: "POST",
       apiUrl: `${EndpointUrl.importFileValidation}`,
       headers: {},
-    }
+    };
     triggerApi(apiObject)
       .then((response: ApiResponse) => {
         if (response.result.success) {
+          setLoader(false);
           if (!response.result.data.error) {
             // console.log(1111111111111111);
-            setHeaderLabel('Summary')
-            setIsBtnLoading(false)
+            setHeaderLabel("Summary");
+            setIsBtnLoading(false);
             if (response.result.data.price_list) {
               setProdAddedMsg(
-                response.result.data.price_list.new_products.message,
-              )
-              setProdUpdatedMsg(response.result.data.price_list.changes.message)
+                response.result.data.price_list.new_products.message
+              );
+              setProdUpdatedMsg(
+                response.result.data.price_list.changes.message
+              );
               setAddProductsList(
-                response.result.data.price_list.new_products.list,
-              )
+                response.result.data.price_list.new_products.list
+              );
               setUpdatedProductsList(
-                response.result.data.price_list.changes.list,
-              )
-              setPriceTempTable(response.result.data.price_list.temp_table)
-              setPricingImgName(response.result.data.price_list.image_name)
+                response.result.data.price_list.changes.list
+              );
+              setPriceTempTable(response.result.data.price_list.temp_table);
+              setPricingImgName(response.result.data.price_list.image_name);
               setOriginalImgName(
-                response.result.data.price_list.original_filename,
-              )
+                response.result.data.price_list.original_filename
+              );
             }
             setStartDate(
               response.result.data.start_date
                 ? response.result.data.start_date
-                : startDate,
-            )
+                : startDate
+            );
             setEndDate(
               response.result.data.end_date
                 ? response.result.data.end_date
-                : endDate,
-            )
+                : endDate
+            );
             if (response.result.data.discount_codes) {
               setDiscountProductsMsg(
-                response.result.data.discount_codes.new_products.message,
-              )
-
+                response.result.data.discount_codes.new_products.message
+              );
+              console.log(response.result.data.discount_codes.temp_table, 446);
               setDiscountTempTable(
-                response.result.data.discount_codes.temp_table,
-              )
-              let obj = {
+                response.result.data.discount_codes.temp_table
+              );
+              const obj = {
                 ...response.result.data.discount_codes,
                 is_append: discountChecked,
-              }
-              delete obj.new_products
-              setDiscountCodeParam(obj)
+              };
+              delete obj.new_products;
+              setDiscountCodeParam(obj);
             }
           } else {
-            setHeaderLabel('Error Log')
-            setErrorLogMsg(response.result.data.message)
-            setSampleHeaders(response.result.data.sample_headers)
-            setUploadedError(response.result.data.uploaded_headers)
-            setIsBtnLoading(false)
-            setErrorType(response.result.data.type)
-            setUploadedcode(response.result.data.uploaded_code)
-            setExistingcode(response.result.data.existing_code)
-            setErrorLog(response.result.data.error_log)
-            setErrorColumnData(response.result.data.column_data)
-            setCloneRowData(response.result.data.row_data)
+            setHeaderLabel("Error Log");
+            setErrorLogMsg(response.result.data.message);
+            setSampleHeaders(response.result.data.sample_headers);
+            setUploadedError(response.result.data.uploaded_headers);
+            setIsBtnLoading(false);
+            setErrorType(response.result.data.type);
+            setUploadedcode(response.result.data.uploaded_code);
+            setExistingcode(response.result.data.existing_code);
+            setErrorLog(response.result.data.error_log);
+            setErrorColumnData(response.result.data.column_data);
+            setCloneRowData(response.result.data.row_data);
 
-            let data = []
-            data = response.result.data.row_data.slice(0, 7)
-            setErrorRowData(data)
-            rowLength = response.result.data.row_data.length
-            setRowLength(rowLength)
-            console.log(rowLength)
+            let data = [];
+            data = response.result.data.row_data.slice(0, 7);
+            setErrorRowData(data);
+            const len = response.result.data.row_data.length;
+            setRowLength(len);
           }
+        } else {
+          setLoader(false);
         }
       })
       .catch((err: string) => {
-        console.log(err)
-      })
+        console.log(err);
+      });
   }
-  function onBtnExport() {
-    var params = {
+  async function onBtnExport() {
+    setErrorRowData(cloneRowData.slice());
+    const params: any = {
       skipHeader: false,
       skipFooters: true,
       allColumns: true,
       onlySelected: false,
       suppressQuotes: true,
-      fileName: 'test2.xlsx',
-      columnSeparator: ',',
-    }
-    gridEvent.api.exportDataAsExcel(params)
+      // eslint-disable-next-line no-useless-concat
+      fileName: `${selectedNewVendor.value}` + "error.xlsx",
+      columnSeparator: ",",
+      exportedRows: "all",
+    };
+    gridEvent.api.exportDataAsExcel(params);
   }
-  // function exportData() {
-  //   let url = `${EndpointUrl.importFileValidation}`;
-  //   exportUrl = url;
-  //   setExportUrl(exportUrl);
-  //   setToast(true);
-  //   let toastMsg = "Data Exported Succesfully";
-  //   setToastMsg(toastMsg);
-  //   setTimeout(() => {
-  //     setToast(false);
-  //   }, 1500);
-  //   // let url2 = `${url}?page=${pageNumber}&sort=${sort}&sort_key=${sortkey}`
-
-  //   const apiObject = {
-  //     payload: {},
-  //     method: "GET",
-  //     apiUrl: url,
-  //     headers: {}
-  //   };
-  //   triggerApi(apiObject)
-  //     .then(() => { })
-  //     .catch((err: string) => {
-  //       console.log(err);
-  //     });
-  // }
-  // function exportData() {
-  //   // console.log(gridEvent);
-  //   gridEvent.api.exportDataAsExcel();
-  // }
 
   function backView(label: string) {
-    console.log(label)
-    if (label === 'Error Log' || label === 'Summary') {
-      setHeaderLabel('Upload Files')
+    console.log(label);
+    if (label === "Error Log" || label === "Summary") {
+      setHeaderLabel("Upload Files");
     }
-    if (label === 'Products List') {
-      setHeaderLabel('Summary')
+    if (label === "Products List") {
+      setHeaderLabel("Summary");
     }
-    if (label === 'Import Data') {
-      setHeaderLabel('Summary')
+    if (label === "Import Data") {
+      setHeaderLabel("Summary");
     }
   }
 
   function discountCheckBox(e: any) {
-    console.log(e.target.checked)
-    discountChecked = e.target.checked
-    setDiscountChecked(e.target.checked)
-    let obj = {
+    setDiscountChecked(e.target.checked);
+    const obj = {
       ...discountData,
       is_append: discountChecked,
-    }
-    setDiscountData(obj)
+    };
+    setDiscountData(obj);
   }
 
-  function viewMoreItems() {
-    viewMoreBtn = viewMoreBtn === 'View Less' ? 'View More' : 'View Less'
-    setviewMoreBtn(viewMoreBtn)
+  async function viewMoreItems() {
+    setviewMoreBtn(viewMoreBtn === "View-Less" ? "View-More" : "View-Less");
     // exportData();
     // onBtnExport();
-    if (viewMoreBtn === 'View Less') {
-      setErrorRowData(cloneRowData.slice())
+    if (viewMoreBtn === "View-Less") {
+      setErrorRowData(cloneRowData.slice());
     } else {
-      setErrorRowData(cloneRowData.slice(0, 5))
+      setErrorRowData(cloneRowData.slice(0, 5));
     }
+    return cloneRowData;
   }
 
   function pricingCheckBox(e: any) {
-    pricingChecked = e.target.checked
-    setPricingChecked(e.target.checked)
-    let obj = {
+    setPricingChecked(e.target.checked);
+    const obj = {
       ...pricingdata,
       is_append: pricingChecked,
-    }
-    setPricingData(obj)
+    };
+    setPricingData(obj);
   }
-  const [isStartDate, setIsStartdate] = useState(false)
-  const [isEndDate, setIsEnddate] = useState(false)
 
   function selectStartDate(e: any) {
-    console.log(e)
-    startDate = e
-    setStartDate(e)
-    setIsStartdate(false)
-    setMinDate(e)
+    setStartDate(e);
+    setIsStartdate(false);
+    setMinDate(e);
   }
   function selectEndDate(e: any) {
-    endDate = e
-    setEndDate(e)
-    setIsEnddate(false)
+    setEndDate(e);
+    setIsEnddate(false);
   }
 
+  const handleOrgInputChange = (newValue: string) => {
+    console.log(newValue);
+    return newValue;
+  };
+
+  const promiseSupplierOptions = (inputValue: string, flag: string) =>
+    new Promise((resolve) => {
+      if (current.timer) clearTimeout(current.timer);
+      current.timer = setTimeout(() => {
+        if (flag === "supplierlist") {
+          resolve(
+            getFilterSupplierData(inputValue, EndpointUrl.PricingAllVendors)
+          );
+        }
+      }, 1000);
+    });
+  const baseUrl = process.env.REACT_APP_API_URL;
+
+  const sampleDownload = (type: any) => {
+    setLoader(true);
+    const apiObject = {
+      payload: {},
+      method: "GET",
+      apiUrl: `${EndpointUrl.ImportPricing}?type=${type}&token=${token}`,
+      headers: {},
+    };
+
+    triggerApi(apiObject)
+      .then(() => {
+        setLoader(false);
+        const exportUrl = `${EndpointUrl.ImportPricing}?type=${type}&token=${token}`;
+        window.location.href = baseUrl + exportUrl;
+
+        //  if (response.result.success) {
+        //    setOpacity(false);
+        //    sendModelData({ success: true, Id: response.result.data });
+        //    setServerMsg(null);
+        //    setOpacity(false);
+        //  } else {
+        //    setServerMsg(response.result.data);
+        //    setOpacity(false);
+        //  }
+      })
+      .catch((err: string) => {
+        console.log(err);
+      });
+  };
   return (
-    <Fragment>
+    <>
       {openImportingDataPopupModel === true && (
         <>
           {/* <ProgressPercent>
@@ -575,27 +603,26 @@ export default function FileUploadModel({ onFileSelect }: Props) {
             <ExportIconPopupHeader>
               <PiModalHeader>
                 <PopupHeaderDiv>
-                  {
-                    <CloseButton
-                      onClick={() => closeImportPopup()}
-                      title="close"
-                      className="Hover"
-                    >
-                      {' '}
-                      <img src={crossImg} alt="loading"></img>{' '}
-                    </CloseButton>
-                  }
-                  <PiTypography component="h4">Import Data</PiTypography>
-                  <hr />
+                  <PiTypography component="h3">
+                    Imported Data Successfully
+                  </PiTypography>
+                  <CloseButton
+                    onClick={() => closeImportPopup()}
+                    title="close"
+                    className="Hover"
+                  >
+                    {" "}
+                    <img src={crossImg} alt="loading" />{" "}
+                  </CloseButton>
                 </PopupHeaderDiv>
               </PiModalHeader>
+              <hr />
             </ExportIconPopupHeader>
             <PiModalBody>
               <ExportIconPopup>
                 <p>
-                  {' '}
-                  The import process will be running in the background. Once
-                  complete, a mail will be sent to your registered email
+                  Import process is in progress. An email is sent to your
+                  Registered Email.
                 </p>
               </ExportIconPopup>
             </PiModalBody>
@@ -603,29 +630,45 @@ export default function FileUploadModel({ onFileSelect }: Props) {
         </>
       )}
       <PiModal isOpen={openModel} width={1000}>
-        <PiModalHeader>
-          {headerLabel && (
-            <>
+        <ExportIconPopupHeader>
+          <PiModalHeader>
+            {headerLabel && (
               <PopupHeaderDiv className="Upload-files">
-                <UploadModalTitle>
-                  {headerLabel !== 'Upload Files' && (
-                    <div onClick={() => backView(headerLabel)}>
-                      <ArrowLeftIcon label="" />
-                    </div>
-                  )}
-
-                  <PiTypography component="h4">
-                    {headerLabel === 'Error Log' ? errorLog : headerLabel}
-                  </PiTypography>
-                  <UploadImgDiv src={crossImg} onClick={closeModel} />
-                </UploadModalTitle>
-                <hr />
+                {headerLabel !== "Upload Files" && (
+                  <div
+                    className="Back-arrow"
+                    onClick={() => backView(headerLabel)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        backView(headerLabel);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Back"
+                  >
+                    <ArrowLeftIcon label="" />
+                  </div>
+                )}
+                <h3
+                  title={headerLabel === "Error Log" ? errorLog : headerLabel}
+                >
+                  {headerLabel === "Error Log" ? errorLog : headerLabel}
+                </h3>
+                <CloseButton
+                  onClick={() => closeModel()}
+                  title="close"
+                  className="Hover"
+                >
+                  <img src={crossImg} alt="loading" />
+                </CloseButton>
               </PopupHeaderDiv>
-            </>
-          )}
-        </PiModalHeader>
+            )}
+          </PiModalHeader>
+          <hr />
+        </ExportIconPopupHeader>
         <PiModalBody>
-          {headerLabel === 'Upload Files' && (
+          {headerLabel === "Upload Files" && (
             <>
               {/* <UploadModalTitle>
                 <PiTypography component="h4">Upload Files</PiTypography>
@@ -645,54 +688,128 @@ export default function FileUploadModel({ onFileSelect }: Props) {
               </DragSection> */}
               <ImportPopupContainer>
                 <div className="branch">
-                  <div className="select-container">
-                    <div className="branch-label-container">
-                      <PiLabelName label="Branch" />
+                  <div className="selectParentDiv" style={{ gap: "16px" }}>
+                    <div className="select-container">
+                      <div className="select-width pi-select-wrapper">
+                        <AsyncLabel
+                          htmlFor="async-select-example"
+                          className="css-re7y6x"
+                        >
+                          Vendor
+                        </AsyncLabel>
+                        <AsyncSelect
+                          name="supplier"
+                          inputId="async-select-example"
+                          onInputChange={handleOrgInputChange}
+                          loadOptions={(e: any) =>
+                            promiseSupplierOptions(e, "supplierlist")
+                          }
+                          placeholder="Search"
+                          classNamePrefix="react-select"
+                          // onChange={(value) => {
+                          //  setFieldValue(`organizations_id`, value)
+                          //  HandleChange(value)
+                          // }}
+                          value={selectedNewVendor}
+                          onChange={selectVendor}
+                          noOptionsMessage={(obj: any) =>
+                            !obj.inputValue
+                              ? "Search Supplier Name"
+                              : " Supplier Not Found"
+                          }
+                        />
+                      </div>
                     </div>
-                    <PiSelect
-                      libraryType="atalskit"
-                      variant="outlined"
-                      name="select"
-                      defaultValue={selectedBrnch}
-                      onChange={(e) => selectBranch(e)}
-                      // value={branchValue}
-                      options={branchList}
-                      placeholder="Select Branch"
-                    />
+                    {/* {selectedNewVendor && !selectedNewVendor.is_different_pricing && (
+                      <div className="checkbox-field">
+                        <div className="width-100 checkbox-form-field">
+                          <PiCheckbox
+                            helpText=""
+                            isChecked={differentPricing}
+                            label="Is Different Pricing"
+                            libraryType="atalskit"
+                            name="is_different_pricing"
+                            onChange={(e: any) => onNcrChanged(e)}
+                            size="medium"
+                          />
+                        </div>
+                      </div>
+                    )} */}
+                    <div className="select-container">
+                      <div className="select-width pi-select-wrapper">
+                        <AsyncLabel
+                          htmlFor="async-select-example"
+                          className="css-re7y6x"
+                        >
+                          Branch
+                        </AsyncLabel>
+                        <PiSelect
+                          libraryType="atalskit"
+                          variant="outlined"
+                          name="select"
+                          // defaultValue={selectedBrnch}
+                          onChange={(e) => selectBranch(e)}
+                          value={branchValue}
+                          options={branchList}
+                          placeholder="Select Branch"
+                          classNamePrefix="react-select"
+                          isDisabled={loader}
+                          noOptionsMessage={() => "Branch Not Found"}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                {isBranchSelect && (
-                  <small className="branch-valid-msg">
-                    Please select Branch
-                  </small>
-                )}
+                <PricingDisclaimer>
+                  {selectedNewVendor &&
+                    selectedNewVendor.is_different_pricing === "Yes" && (
+                      <div className="message">
+                        This vendor has different pricing by Branch
+                      </div>
+                    )}
+                </PricingDisclaimer>
                 <RowContainer>
-                  <DragSection>
+                  <DragSection className="file-import-box">
                     <p className="file-type-label">Upload Discount File</p>
 
                     <UploadDiv>
-                      <UploadIcon src={uploadImg} />
+                      {/* <div
+                        className="icon_container "
+                        onClick={() => {
+                          console.log((e: DragEvent) => onDrop(e, "discount"));
+                        }}
+                      >
+                        {/* <UploadIcon src={uploadImg} onClick={() => {}} /> */}
+
+                      {/* <img src={uploadImg} alt="" /> */}
+                      {/* </div> */}
+
                       <HeaderText>
                         <PiFleUploader
                           dropzoneProps={{
-                            disabled: false,
+                            disabled: loader,
                             maxSize: 94371840,
                             multiple: true,
                             noDrag: false,
-                            text: 'Drag & Drop Discount file anywhere here',
+                            text: <FileUploadElement />,
                           }}
-                          onUpload={(e: DragEvent) => onDrop(e, 'discount')}
+                          onUpload={(e: DragEvent) => onDrop(e, "discount")}
                         />
                       </HeaderText>
                       {/* {filetype === "discount" && ( */}
                       <>
-                        <p style={{ textAlign: 'center',margin: '5px 0px' }}>{fileName}</p>
+                        <p
+                          className="uploaded-file-name"
+                          style={{ textAlign: "center", margin: "5px 0px" }}
+                        >
+                          {fileName}
+                        </p>
 
                         <p
                           className={
-                            fileValidationError === 'Invalid File'
-                              ? 'invalid-file-error'
-                              : 'valid-file'
+                            fileValidationError === "Invalid File"
+                              ? "invalid-file-error"
+                              : "valid-file"
                           }
                         >
                           {fileValidationError}
@@ -704,6 +821,14 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                         (Maximum file size 90MB, Supported file formats XLSX,
                         CSV)
                       </UploadNote>
+                      <DownloadIconContainer
+                        onClick={() => {
+                          sampleDownload("discount_import");
+                        }}
+                      >
+                        <span>Sample File</span>{" "}
+                        <img src={DownLoad} alt="loading" />
+                      </DownloadIconContainer>
                     </UploadDiv>
                     <PiCheckbox
                       helpText=""
@@ -711,43 +836,59 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                       label="Append to Existing List"
                       libraryType="atalskit"
                       name="checkbox"
-                      onChange={discountCheckBox}
+                      onChange={(e: any) => discountCheckBox(e)}
                       size="large"
                     />
-                    <BrowseBtn>
+                    {/* <BrowseBtn>
                       <p className="browse-text">Browse</p>
                       <InputEle
                         type="file"
-                        onChange={(e: any) => onFileChange(e, 'discount')}
+                        onChange={(e: any) => onFileChange(e, "discount")}
                         multiple
                       />
-                    </BrowseBtn>
+                    </BrowseBtn> */}
                   </DragSection>
-                  <DragSection>
+                  <DragSection className="file-import-box">
                     <p className="file-type-label">Upload Pricing File</p>
-                    <UploadDiv>
-                      <UploadIconNext src={uploadImg} />
 
-                      <PiFleUploader
-                        dropzoneProps={{
-                          disabled: false,
-                          maxSize: 94371840,
-                          multiple: true,
-                          noDrag: false,
-                          text: 'Drag & Drop Pricing file anywhere here',
+                    <UploadDiv>
+                      {/* <div
+                        className="icon_container "
+                        onClick={() => {
+                          console.log((e: DragEvent) => onDrop(e, "discount"));
                         }}
-                        onUpload={(e: DragEvent) => onDrop(e, 'pricing')}
-                      />
+                      >
+                        <UploadIcon src={uploadImg} onClick={() => {}} />
+                      </div> */}
+
+                      {/* <img src={uploadImg} alt="" /> */}
+
+                      {/* <UploadIconNext src={uploadImg} /> */}
+                      <HeaderText>
+                        <PiFleUploader
+                          dropzoneProps={{
+                            disabled: loader,
+                            maxSize: 94371840,
+                            multiple: true,
+                            noDrag: false,
+                            text: <FileUploadElement />,
+                          }}
+                          onUpload={(e: DragEvent) => onDrop(e, "pricing")}
+                        />
+                      </HeaderText>
                       {/* {filetype === "pricing" && ( */}
                       <>
-                        <p style={{ textAlign: 'center', margin: '5px 0px' }}>
+                        <p
+                          className="uploaded-file-name"
+                          style={{ textAlign: "center", margin: "5px 0px" }}
+                        >
                           {priceFileName}
                         </p>
                         <p
                           className={
-                            pricingFileValidationError === 'Invalid File'
-                              ? 'invalid-file-error'
-                              : 'valid-file'
+                            pricingFileValidationError === "Invalid File"
+                              ? "invalid-file-error"
+                              : "valid-file"
                           }
                         >
                           {pricingFileValidationError}
@@ -759,6 +900,15 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                         (Maximum file size 90MB, Supported file formats XLSX,
                         CSV)
                       </UploadNote>
+
+                      <DownloadIconContainer
+                        onClick={() => {
+                          sampleDownload("price_import");
+                        }}
+                      >
+                        <span>Sample File</span>{" "}
+                        <img src={DownLoad} alt="loading" />
+                      </DownloadIconContainer>
                     </UploadDiv>
                     <TextEle>
                       <PiCheckbox
@@ -767,51 +917,64 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                         label="Append to Existing List"
                         libraryType="atalskit"
                         name="checkbox"
-                        onChange={pricingCheckBox}
+                        onChange={(e: any) => pricingCheckBox(e)}
                         size="large"
                       />
                     </TextEle>
-                    <BrowseBtn>
+                    {/* <BrowseBtn>
                       <p className="browse-text">Browse</p>
                       <InputEle
                         type="file"
-                        onChange={(e: any) => onFileChange(e, 'pricing')}
+                        onChange={(e: any) => onFileChange(e, "pricing")}
                         multiple
                       />
-                    </BrowseBtn>
+                    </BrowseBtn> */}
                   </DragSection>
+                  {loader && (
+                    <SpinnerDiv
+                      style={{ position: "absolute", left: "50%", top: "0" }}
+                    >
+                      <PiSpinner
+                        color="primary"
+                        size={40}
+                        libraryType="atalskit"
+                      />
+                    </SpinnerDiv>
+                  )}
                 </RowContainer>
               </ImportPopupContainer>
             </>
           )}
-          {headerLabel === 'Summary' && (
+          {headerLabel === "Summary" && (
             <>
               <DatePickerDiv>
                 <DateStyles>
+                  <PiLabelName label="Start Date" />
                   <PiDatePicker
                     dateFormat="MM/DD/YYYY"
-                    helpText=""
-                    label="Start Date"
+                    // helpText=""
+                    // label="Start Date"
                     libraryType="atalskit"
                     name="datePicker"
                     minDate={TodayDate}
                     defaultValue={minDate}
-                    onChange={selectStartDate}
-                    onKeyDown={function noRefCheck() {}}
+                    onChange={(e: any) => selectStartDate(e)}
+                    onKeyDown={() => {}}
                     value={startDate}
                     placeholder="MM/DD/YYYY"
                   />
                   {isStartDate && <small>Please select Start Date</small>}
                 </DateStyles>
                 <DateStyles>
+                  <PiLabelName label="End Date" />
                   <PiDatePicker
                     dateFormat="MM/DD/YYYY"
-                    helpText=""
-                    label="End Date"
+                    // helpText=""
+                    // label="End Date"
                     libraryType="atalskit"
                     name="datePicker"
-                    onChange={selectEndDate}
-                    onKeyDown={function noRefCheck() {}}
+                    onChange={(e: any) => selectEndDate(e)}
+                    onKeyDown={() => {}}
                     value={endDate}
                     minDate={minDate}
                     placeholder="MM/DD/YYYY"
@@ -852,8 +1015,7 @@ export default function FileUploadModel({ onFileSelect }: Props) {
               /> */}
             </>
           )}
-
-          {headerLabel === 'Error Log' && (
+          {headerLabel === "Error Log" && (
             <>
               {/* <ErrorlogPanel>
                 <ErrorLogDiv className="error-msg">
@@ -862,7 +1024,7 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                 </ErrorLogDiv>
 
                 <ol>{errorList && errorList.map(error => <li>{error}</li>)}</ol>
-               
+
               </ErrorlogPanel> */}
               <ErrorlogPanel>
                 <ErrorLogDiv className="error-msg">
@@ -870,7 +1032,7 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                   <div className="error-log-text">{errorLogMsg}</div>
                 </ErrorLogDiv>
 
-                {errorType === 'code_mismatch' && (
+                {errorType === "code_mismatch" && (
                   <CodeMismatchError>
                     <InsideHeaderLabel>
                       <PiLabelName
@@ -886,7 +1048,7 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                     </InsideHeaderLabelTwo>
                   </CodeMismatchError>
                 )}
-                {errorType === 'list' && (
+                {errorType === "list" && (
                   <>
                     <div className="grid-div">
                       <PiGrid
@@ -902,14 +1064,16 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                       {/* {viewMoreBtn !== "View Less" ? */}
                       <PiButton
                         appearance="link"
-                        label={rowLength > 5 ? viewMoreBtn : ''}
-                        onClick={viewMoreItems}
+                        label={rowLength > 5 ? viewMoreBtn : ""}
+                        onClick={() => viewMoreItems()}
                       />
-                      <PiButton
-                        appearance="link"
-                        label="Export"
-                        onClick={onBtnExport}
-                      />
+                      <div className="Export-link">
+                        <PiButton
+                          appearance="link"
+                          label="Export"
+                          onClick={() => onBtnExport()}
+                        />
+                      </div>
 
                       {/* : */}
                       {/* <> */}
@@ -937,7 +1101,7 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                     </ButtonDivTag>
                   </>
                 )}
-                {errorType === 'headers_mismatch' && (
+                {errorType === "headers_mismatch" && (
                   <>
                     <p className="format-label">Sample Format</p>
                     <div className="overflow-table">
@@ -949,8 +1113,8 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                                 <th
                                   className={
                                     error.missing
-                                      ? 'error-mismatch'
-                                      : 'error-name'
+                                      ? "error-mismatch"
+                                      : "error-name"
                                   }
                                 >
                                   {error.name}
@@ -970,8 +1134,8 @@ export default function FileUploadModel({ onFileSelect }: Props) {
                                 <th
                                   className={
                                     error.missing
-                                      ? 'error-mismatch'
-                                      : 'error-name'
+                                      ? "error-mismatch"
+                                      : "error-name"
                                   }
                                 >
                                   {error.name}
@@ -986,7 +1150,7 @@ export default function FileUploadModel({ onFileSelect }: Props) {
               </ErrorlogPanel>
             </>
           )}
-          {headerLabel === 'Products List' && (
+          {headerLabel === "Products List" && (
             <>
               {addProductsList && addProductsList.length && (
                 <>
@@ -1015,54 +1179,72 @@ export default function FileUploadModel({ onFileSelect }: Props) {
             </>
           )}
         </PiModalBody>
-        {headerLabel === 'Upload Files' && (
-          <PiModalFooter>
-            <PiButton
-              appearance="secondary"
-              label="Cancel"
-              onClick={closeModel}
-            />
-            <PiButton
-              appearance="primary"
-              label="Proceed"
-              libraryType="atalskit"
-              isLoading={isBtnLoading ? true : false}
-              isDisabled={disableProceed}
-              className="proceed-btn"
-              onClick={proceedToSummary}
-            />
-          </PiModalFooter>
+        {headerLabel === "Upload Files" && (
+          <ImportFileFooter className="footer" style={{ position: "relative" }}>
+            {serverMsg && (
+              <div className="server-msg" title={serverMsg}>
+                {serverMsg}
+              </div>
+            )}
+            <PiModalFooter>
+              {/* <PiButton
+                appearance="secondary"
+                label="Cancel"
+                onClick={closeModel}
+              /> */}
+              <PiButton
+                appearance="primary"
+                label="Import"
+                libraryType="atalskit"
+                // isLoading={isBtnLoading ? true : false}
+                isDisabled={disableProceed || isBtnLoading || loader}
+                className="proceed-btn"
+                onClick={() => proceedToSummary()}
+              />
+            </PiModalFooter>
+          </ImportFileFooter>
         )}
-        {headerLabel === 'Summary' && (
+        {headerLabel === "Summary" && (
           <PiModalFooter>
-            <PiButton
-              appearance="secondary"
-              label="Cancel"
-              onClick={closeModel}
-            />
-            <PiButton
-              appearance="primary"
-              label="Proceed"
-              onClick={proceed}
-              //isDisabled={!startDate.length || !endDate.length}
-            />
-          </PiModalFooter>
-        )}
-        {headerLabel === 'Import Data' && (
-          <PiModalFooter>
-            <ServerValidation className="serverErrorValidation">
-              {serverError}
-            </ServerValidation>
-            <PiButton appearance="primary" label="Close" onClick={closeModel} />
             {/* <PiButton
+              appearance="secondary"
+              label="Cancel"
+              onClick={closeModel}
+            /> */}
+            <PiButton
+              appearance="primary"
+              label="Proceed"
+              onClick={() => proceed()}
+              // isDisabled={!startDate.length || !endDate.length}
+            />
+          </PiModalFooter>
+        )}
+        {headerLabel === "Import Data" && (
+          <>
+            <PiModalBody>
+              <ExportIconPopup>
+                <p>
+                  {" "}
+                  The import process will be running in the background. Once
+                  complete, a mail will be sent to your registered email
+                </p>
+              </ExportIconPopup>
+            </PiModalBody>
+            <PiModalFooter>
+              <ServerValidation className="serverErrorValidation">
+                {serverError}
+              </ServerValidation>
+              {/* <PiButton appearance="primary" label="Close" onClick={closeModel} /> */}
+              {/* <PiButton
               className="roll-back"
               appearance="secondary"
               label="Roll Back"
               onClick={upload}
             /> */}
-          </PiModalFooter>
+            </PiModalFooter>
+          </>
         )}
       </PiModal>
-    </Fragment>
-  )
+    </>
+  );
 }

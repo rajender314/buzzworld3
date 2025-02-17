@@ -1,1 +1,4 @@
-export { default } from "./discountCodes";
+// export { default } from './discountCodes';
+import DiscountCodes from "./discountCodes";
+
+export default DiscountCodes;

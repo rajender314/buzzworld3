@@ -1,6 +1,5 @@
-import React, { useState, Fragment, useEffect, } from "react";
-import { Formik } from "formik";
-import CrossLogo from "../../assets/images/cross.svg";
+import { useState, useEffect, useRef } from "react";
+import { Formik, Field } from "formik";
 import {
   PiInputForm,
   PiTypography,
@@ -9,185 +8,186 @@ import {
   PiModalHeader,
   PiModalBody,
   PiModalFooter,
-  PiToggle,
-  PiTextareaForm
+  PiTextareaForm,
+  PiSpinner,
+  PiSelectForm,
+  PiCheckbox,
 } from "pixel-kit";
+import { ApiResponse, AddProps, PageProps } from "@app/services/schema/schema";
+import { triggerApi } from "@app/services/api-services";
 import {
-  ApiResponse,
-  AddProps,
-  PageProps,
-  RowDataProps,
-} from "src/services/schema/schema";
-import { triggerApi } from "src/services/api-services";
-import { addSchema } from "src/modules/contacts/validation/addValidations";
-import { FilterFormFields, InnerBody, ButtonsBody, CloseButton, ErrorMessage, Popup, InnerBodyQuantity, } from "src/components/adminaddrowmodel/adminaddrowmodel.component";
-
-import Snackbar from "src/components/Snackbar/snackbar";
-import { PopupHeaderDiv } from "../fileuploadModel/fileuploadModel.component";
+  addSchema,
+  VendorSchema,
+} from "@app/modules/contacts/validation/addValidations";
+import {
+  FilterFormFields,
+  InnerBody,
+  CloseButton,
+  Popup,
+  InnerBodyQuantity,
+} from "@app/components/adminaddrowmodel/adminaddrowmodel.component";
+import EndpointUrl from "@app/core/apiEndpoints/endPoints";
+import { AsyncSelect } from "@atlaskit/select";
+import {
+  PopupHeaderContentDiv,
+  PopupHeaderDiv,
+  SpinnerDiv,
+} from "../fileuploadModel/fileuploadModel.component";
+import { AsyncLabel } from "../rmaModel/RmaModel.component";
+import CrossLogo from "../../assets/images/cross.svg";
+import { AsyncSelectDiv } from "../Repair-Components/selectItems/AddPartRepair/add-part-repair.component";
 
 type Props = {
-  data: boolean;
-  onChildClick: (e: AddProps) => {};
+  onChildClick: any;
   props: PageProps;
-  gridData: any;
+  sendEventData: any;
 };
 
-export default function AddRowModel({ data, onChildClick, props, gridData }: Props) {
-  let [openModel, setOpenModel] = useState(false);
-  let [nameErr, setNameErr] = useState('');
-  let [toastProps, setToastProps] = useState({
-    appearance: "error",
-    message: ""
-  });
-  const [showToast, setToast] = useState(false);
-  const [display, setDisplay] = useState(false);
-  let [Api, setApi] = useState('')
-  const [isChecked, setIsChecked] = useState(true)
-
-  let [rowData, setRowData] = useState<Array<RowDataProps>>([]);
-
-  useEffect(() => {
-    console.log(rowData);
-    setOpenModel(true);
-    if (props.pageLabel !== "PO_Min_Qty") {
-      initialValues = {
-        name: "",
-        description: "",
-        status: isChecked === true ? "true" : "false",
-        quantity: "quantity"
-      }
-      setInitialValues(initialValues)
-    } else if (props.pageLabel === "PO_Min_Qty") {
-      initialValues = {
-        name: "name",
-        description: "description",
-        status: isChecked === true ? "true" : "false",
-        quantity: ""
-      }
-      setInitialValues(initialValues)
-    }
-  }, []);
-
-
-  let [initialValues, setInitialValues] = useState({
+export default function AddRowModel({
+  onChildClick,
+  props,
+  sendEventData,
+}: Props) {
+  const [openModel, setOpenModel] = useState(false);
+  const [nameErr, setNameErr] = useState("");
+  const [loading, setloading] = useState(true);
+  const [isChecked] = useState(true);
+  const [serverMsg, setServerMsg] = useState(null);
+  const [areaValue, setareaValue] = useState("");
+  const [headerLabel, setHeaderLable] = useState<string>("");
+  const { current }: any = useRef({ timer: 0 });
+  const [addVendorerrormsg, setAddvendorErrormsg]: any = useState();
+  const [showerrormsg, setShowErromsg] = useState(false);
+  const [supierName, setSuplierName]: any = useState("");
+  const formik = useRef<any>(null);
+  const [initialValues, setInitialValues]: any = useState({
     name: "",
     description: "",
     status: isChecked === true ? "true" : "false",
-    quantity: ""
+    quantity: "",
+    mapping_accountype_id: "",
+    code: "",
+    supplier_name: "",
+    supplier_code: "",
+    is_different_pricing: "",
+    pos_mail: "",
+    // pos_test_mail: "",
   });
-
-  function resetForm(data: AddProps) {
-    data = {
-      name: "",
-      description: "",
-      status: "true",
-      quantity: ""
+  const [accountTypeList, setAccountTypeList] = useState<any>([]);
+  function importAccountTypes() {
+    const apiObject = {
+      payload: {},
+      method: "GET",
+      apiUrl: `${EndpointUrl.importAccountTypes}?is_dropdown=true`,
+      headers: {},
+    };
+    triggerApi(apiObject)
+      .then((response: ApiResponse) => {
+        if (response.result.success) {
+          setAccountTypeList(response.result.data);
+        }
+      })
+      .catch(() => {});
+  }
+  useEffect(() => {
+    setHeaderLable(`Add ${props.displayLabel}`);
+    setOpenModel(true);
+    if (props.pageLabel === "Account_Types") {
+      importAccountTypes();
     }
+    if (props.pageLabel !== "PO_Min_Qty") {
+      let values;
+      if (props.pageLabel === "Account_Types") {
+        values = {
+          name: "",
+          description: "",
+          status: isChecked === true ? "true" : "false",
+          quantity: "1",
+          mapping_accountype_id: "",
+          code: "",
+          supplier_name: "",
+          supplier_code: "",
+          is_different_pricing: "",
+        };
+      } else {
+        values = {
+          name: "",
+          description: "",
+          status: isChecked === true ? "true" : "false",
+          quantity: "1",
+          mapping_accountype_id: "",
+          code: "",
+          supplier_name: "",
+          supplier_code: "",
+          is_different_pricing: "",
+        };
+      }
+
+      setInitialValues(values);
+      setTimeout(() => {
+        setloading(false);
+      }, 100);
+    } else if (props.pageLabel === "PO_Min_Qty") {
+      const values = {
+        name: "name",
+        description: "description",
+        status: isChecked === true ? "true" : "false",
+        quantity: "",
+        mapping_accountype_id: "",
+        code: "",
+        supplier_name: "",
+        is_different_pricing: "",
+        supplier_code: "",
+      };
+      setInitialValues(values);
+      setTimeout(() => {
+        setloading(false);
+      }, 100);
+    }
+  }, []);
+
+  function resetForm() {
+    formik.current.setFieldValue("supplier_code", "");
+    formik.current.setFieldValue("pos_mail", "");
+    // formik.current.setFieldValue(`pos_test_mail`, "");
+
+    initialValues.supplier_code = "";
+    initialValues.supplier_name = "";
+    initialValues.pos_mail = "";
+
+    setInitialValues(initialValues);
+    setareaValue("");
+    setServerMsg(null);
+  }
+  function handleTextArea(e: any) {
+    setareaValue(e.target.value);
   }
 
-  // if (initialValues.name === '') {
-  //   setNameErr('Name is required');
-  // }
-
-  function handleSubmit(data: AddProps) {
-    console.log(data);
-    // if(data.name === ''){
-    //   nameErr = 'Name is required';
-    //   return setNameErr(nameErr);
-    // }
-    console.log(props.pageLabel)
-    if (props.pageLabel === "Account_Types") {
-      Api = `v1/AccountTypes`
-      setApi(Api);
-    } else if (props.pageLabel === "Classifications") {
-      Api = `v1/Classifications`
-      setApi(Api)
-    } else if (props.pageLabel === "Industry") {
-      Api = `/v1/Industry`
-      setApi(Api)
-    } else if (props.pageLabel === "Sales_Potential") {
-      Api = `/v1/SalesPotential`
-      setApi(Api)
-    } else if (props.pageLabel === "Contact_Types") {
-      Api = `/v1/ContactTypes`
-      setApi(Api)
-    } else if (props.pageLabel === "PO_Min_Qty") {
-      Api = `/v1/Quantity`
-
-      setApi(Api);
-    }
-    console.log(Api);
-
-    if (props.pageLabel !== "PO_Min_Qty") {
+  const submitFormApi = (data: any, url: string) => {
+    if (props.pageLabel !== "PO_Min_Qty" && props.pageLabel !== "Vendors") {
       const apiObject = {
         payload: {
-          name: data.name,
+          name: data.name.trim(),
           description: data.description,
-          status: isChecked === true ? true : false,
+          status: isChecked === true,
+          mapping_accountype_id: data.mapping_accountype_id
+            ? data.mapping_accountype_id.value
+            : "",
+          code: data.code ? data.code : "",
         },
         method: "POST",
-        apiUrl: Api,
-        headers: {}
+        apiUrl: url,
+        headers: {},
       };
       triggerApi(apiObject)
-
         .then((response: ApiResponse) => {
-          console.log(response.result.status_code);
-          if (response.result.success === false) {
-            // apiResponse = response;
-            if (response.result.data !== "Message:The Name is already taken181/var/www/html/rapidium-core/src/Base/Validations/BaseValidations.php") {
-
-              // apiResponse = response;
-              let obj = {
-                appearance: "error",
-                message: response.result.data
-              };
-
-              toastProps = obj;
-
-              setToastProps(toastProps);
-
-
-              setToast(true);
-              setTimeout(() => {
-                // setToast(false);
-              }, 2000);
-
-            } else if (response.result.status_code === 422) {
-              // apiResponse = response;
-              let obj = {
-                appearance: "error",
-                message: "The Name is already present"
-              };
-              toastProps = obj;
-              setToastProps(toastProps);
-
-              setToast(true);
-              setTimeout(() => {
-                // setToast(false);
-              }, 2000);
-            }
-          } else if (response.result.status_code === 200) {
-            // apiResponse = response;
-            let obj = {
-              appearance: "success",
-              message: "Saved successfully"
-            };
-
-            toastProps = obj;
-            setToastProps(toastProps);
-            setTimeout(() => {
-              setDisplay(true);
-              setTimeout(() => {
-                setDisplay(false);
-                setOpenModel(false);
-                closeModel()
-              }, 2000);
-              setOpenModel(false)
-              getUpdated(data)
-            }, 100);
-            // getUpdated();
-            // setOpenModel(true)
+          if (response.result.success) {
+            setServerMsg(null);
+            setOpenModel(false);
+            sendEventData({ success: true });
+            // onChildClick({ success: true })
+          } else {
+            setServerMsg(response.result.data);
           }
         })
         .catch((err: string) => {
@@ -199,302 +199,443 @@ export default function AddRowModel({ data, onChildClick, props, gridData }: Pro
           quantity: data.quantity,
         },
         method: "POST",
-        apiUrl: Api,
-        headers: {}
+        apiUrl: url,
+        headers: {},
       };
       triggerApi(apiObject)
-
         .then((response: ApiResponse) => {
-          console.log(response.result.status_code);
-          if (response.result.success === false) {
-            // apiResponse = response;
-            if (response.result.data !== "Message:The Name is already taken181/var/www/html/rapidium-core/src/Base/Validations/BaseValidations.php") {
-
-              // apiResponse = response;
-              let obj = {
-                appearance: "error",
-                message: response.result.data,
-              };
-
-              toastProps = obj;
-
-              setToastProps(toastProps);
-
-
-              setToast(true);
-              setTimeout(() => {
-                // setToast(false);
-              }, 2000);
-
-            } else if (response.result.status_code === 422) {
-              // apiResponse = response;
-              let obj = {
-                appearance: "error",
-                message: response.result.data,
-              };
-              toastProps = obj;
-              setToastProps(toastProps);
-
-              setToast(true);
-              setTimeout(() => {
-                // setToast(false);
-              }, 2000);
-            }
-          } else if (response.result.status_code === 200) {
-            // apiResponse = response;
-            let obj = {
-              appearance: "success",
-              message: "Saved successfully"
-            };
-
-            toastProps = obj;
-            setToastProps(toastProps);
-            setTimeout(() => {
-              setDisplay(true);
-              setTimeout(() => {
-                setDisplay(false);
-                setOpenModel(false);
-                closeModel()
-              }, 2000);
-              setOpenModel(false)
-              getUpdated(data)
-            }, 100);
-            // getUpdated();
-            // setOpenModel(true)
+          if (response && response.result.success) {
+            setServerMsg(null);
+            setOpenModel(false);
+            sendEventData({ success: true });
+          } else {
+            setServerMsg(response ? response.result.data : "Failed To Save");
           }
+        })
+        .catch((err: string) => {
+          console.log(err);
+        });
+    } else if (props.pageLabel === "Vendors") {
+      console.log(data);
 
+      const apiObject = {
+        payload: {
+          name: data.supplier_name ? data.supplier_name : "",
+          description: data.description ? data.description : "",
+          status: isChecked === true,
+
+          code: data.supplier_code.value ? data.supplier_code.value : "",
+          is_different_pricing: data.is_different_pricing
+            ? data.is_different_pricing
+            : null,
+          pos_mail: data.pos_mail ? data.pos_mail : "",
+          // pos_test_mail: data.pos_test_mail ? data.pos_test_mail : "",
+        },
+        method: "POST",
+        apiUrl: url,
+        headers: {},
+      };
+      triggerApi(apiObject)
+        .then((response: ApiResponse) => {
+          if (response.result.success) {
+            sendEventData({ success: true, vendors: true });
+
+            setShowErromsg(false);
+          } else if (response.result.success === false) {
+            setAddvendorErrormsg(response.result.data);
+            setShowErromsg(true);
+          }
         })
         .catch((err: string) => {
           console.log(err);
         });
     }
+  };
+  function handleSubmit(data: AddProps) {
+    let apiCall = "";
+    if (props.pageLabel === "Account_Types") {
+      apiCall = "v1/AccountTypes";
+    } else if (props.pageLabel === "Classifications") {
+      apiCall = "v1/Classifications";
+    } else if (props.pageLabel === "Industry") {
+      apiCall = "v1/Industry";
+    } else if (props.pageLabel === "Sales_Potential") {
+      apiCall = "v1/SalesPotential";
+    } else if (props.pageLabel === "Contact_Types") {
+      apiCall = "v1/ContactTypes";
+    } else if (props.pageLabel === "Branches") {
+      apiCall = EndpointUrl.branchList;
+    } else if (props.pageLabel === "quote-type") {
+      apiCall = EndpointUrl.QuoteTypes;
+    } else if (props.pageLabel === "Vendors") {
+      apiCall = EndpointUrl.vendorList;
+    } else if (props.pageLabel === "PO_Min_Qty") {
+      apiCall = "v1/Quantity";
+    }
+
+    submitFormApi(data, apiCall);
   }
-
-  function handleChange(data: AddProps) {
-    console.log(data);
-  }
-
-  function getUpdated(data: AddProps) {
-
-    let params = {
-      data
-    };
-    console.log(params);
-    const apiObject = {
-      payload: params,
-      method: "GET",
-      apiUrl: Api,
-      headers: {}
-    };
-    triggerApi(apiObject)
-      .then((response: ApiResponse) => {
-        if (response.result.success) {
-          rowData = response.result.data.list;
-          console.log(rowData)
-          gridData(rowData)
-          setRowData(rowData);
-          let obj = {
-            appearance: "success",
-            message: "Saved successfully"
-          };
-
-          toastProps = obj;
-          setToastProps(toastProps);
-          setDisplay(true);
-        }
-      })
-      .catch((err: string) => {
-        console.log(err);
-      });
-    // setOpenModel(false)
-    setOpenModel(false)
-  }
-
-
 
   function handleRef(e: any) {
-    console.log(e);
-
-    // formik.current = e;
+    formik.current = e;
   }
   function closeModel() {
-    // console.log(222);
     setOpenModel(false);
-    let data = {
-      name: '',
-      description: '',
-      status: '',
-      quantity: '',
+    const data = {
+      name: "",
+      description: "",
+      status: "",
+      quantity: "",
     };
     onChildClick(data);
   }
+  const getSelectItems = async (searchValue: string) => {
+    let options: any = [];
+    if (searchValue && searchValue.length >= 7) {
+      const apiObject = {
+        payload: { supplier: searchValue },
+        method: "POST",
+        apiUrl: `${EndpointUrl.VendorCodeSearch}`,
+        headers: {},
+      };
+      await triggerApi(apiObject)
+        .then((response: ApiResponse) => {
+          if (response.result.status_code === 200 && response.result.success) {
+            setSuplierName(response.result.data.supplier_name);
+            setShowErromsg(false);
+            initialValues.supplier_name = response.result.data.supplier_name
+              ? response.result.data.supplier_name
+              : "";
 
-  return (
+            setInitialValues(initialValues);
 
-    <Fragment>
-      <ErrorMessage>{display && <Snackbar {...toastProps}></Snackbar>}</ErrorMessage>
-      <Popup>
-        <PiModal isOpen={openModel}>
-          <PiModalHeader>
-            <ErrorMessage>
-              {showToast && <Snackbar {...toastProps}></Snackbar>}</ErrorMessage>
-            <PopupHeaderDiv>
-              {<CloseButton onClick={() => closeModel()} title="close" className="Hover"> <img src={CrossLogo}></img> </CloseButton>}
-              <PiTypography component="h4">Add </PiTypography>
-              <hr />
-            </PopupHeaderDiv>
-          </PiModalHeader>
-
-          <Formik
-            validationSchema={addSchema}
-            onSubmit={handleSubmit}
-            nameErr={nameErr}
-            setNameErr={setNameErr}
-            initialValues={initialValues}
-            innerRef={handleRef}
-            handlechange={handleChange}
-            onReset={resetForm}
-          // initialStatus={isChecked}
-
-          >
-            {({ ...formik }: any) => {
-              return (
-                <>
-                  <PiModalBody>
-                    <FilterForm
-                      formik={formik}
-                      initialValues={initialValues}
-                      data={data}
-                      pageLabel={props.pageLabel}
-                      setIsChecked={setIsChecked}
-                      isChecked={isChecked}
-                    // setToggleChecked={setToggleChecked}
-                    // toggleChecked={toggleChecked}
-
-                    />
-                  </PiModalBody>
-                  <PiModalFooter>
-                    <ButtonsBody>
-                      <PiButton
-                        appearance="secondary"
-                        label="Reset"
-                        onClick={formik.resetForm}
-                        type="reset"
-                        className="Secondary"
-                      />
-                      <PiButton
-                        appearance="primary"
-                        label="Add"
-                        onClick={formik.handleSubmit}
-                        className="Primary"
-                      />
-                    </ButtonsBody>
-                  </PiModalFooter>
-                </>
-              );
-            }}
-          </Formik>
-
-        </PiModal>
-      </Popup>
-    </Fragment>
-  );
-}
-
-
-const FilterForm = ({ formik, isChecked, setIsChecked, pageLabel, }: any) => {
-
-  // console.log(onChildClick);
-  // const [isChecked, setIsChecked] = useState(true)
-  // const [submitDisable, setSubmitDisable] = useState(true)
-
-  // const btnDisable = (prev: string, cur: string) => {
-  //   if (prev !== cur) {
-  //     setSubmitDisable(false)
-  //   } else {
-  //     setSubmitDisable(true)
-  //   }
-  // }
-  function changeValue() {
-    setIsChecked(!isChecked)
-    // onChildClick({});
-  }
-  const handleChange = (e: string, type: string) => {
-    if (type === "name") {
-      // btnDisable(initialValues.name, e.target.value)
-    } else if (type === "description") {
-      // btnDisable(initialValues.description, e.target.value)
-    } else if (type === "status") {
-      changeValue()
-      // btnDisable(initialValues.status, e.target.checked)
+            const arr: any = [
+              {
+                value: response.result.data.supplier,
+                label: response.result.data.supplier,
+              },
+            ];
+            options = arr;
+          } else if (response.result.success === false) {
+            setAddvendorErrormsg(response.result.data);
+            setShowErromsg(true);
+          }
+        })
+        .catch((err: string) => {
+          console.log(err);
+        });
+      return options;
     }
-  }
+    return options;
+  };
+  const promiseOptions = (searchValue: string) =>
+    new Promise((resolve) => {
+      if (current.timer) clearTimeout(current.timer);
+      current.timer = setTimeout(() => {
+        resolve(getSelectItems(searchValue));
+      }, 1000);
+    });
+  const handleInputChanges = (newValue: string) => {
+    // setIssearch(true);
+
+    // setSysproIdSearchValue(newValue);
+    if (newValue && newValue.length >= 7) {
+      setShowErromsg(false);
+
+      return newValue;
+    }
+    if (newValue && newValue.length < 7) {
+      setShowErromsg(true);
+      setAddvendorErrormsg("Search Code Seven Characters required");
+    }
+    return newValue;
+  };
+
+  const onSelectItemChange = (value: any) => {
+    initialValues.supplier_code = value || "";
+    initialValues.supplier_name = supierName || "";
+    setInitialValues(initialValues);
+  };
+  const onNcrChanged = (e: any) => {
+    formik.current.setFieldValue("is_different_pricing", e.target.checked);
+  };
 
   return (
     <Popup>
-      <FilterFormFields>
-        {pageLabel !== "PO_Min_Qty" && (
-          <InnerBody>
-            <PiInputForm
-              name="name"
-              label="Name"
-              // onChange={(e: string) => handleChange(e, "name")}
-              libraryType="atalskit"
-              type="text"
-              placeholder="Name"
-              className="Name"
-            />
-            <PiTextareaForm
-              name="description"
-              label="Description"
-              // onChange={(e: string) => handleChange(e, "description")}
-              libraryType="atalskit"
+      <PiModal isOpen={openModel} width={450}>
+        <PopupHeaderContentDiv>
+          <PiModalHeader>
+            <PopupHeaderDiv>
+              <PiTypography component="h3">{headerLabel}</PiTypography>
 
-              placeholder="Description"
-            />
-            <PiToggle
-              direction="row"
-              label={"Active"}
-              name="status"
-              // isChecked={make ? true : false}
-              isChecked={true}
-              onChange={(e: string) => handleChange(e, "status")}
-              // onChange={e => handleMakeChange(e)}
-              size="regular"
-            />
-          </InnerBody>
+              <CloseButton
+                onClick={() => closeModel()}
+                title="close"
+                className="Hover"
+              >
+                <img src={CrossLogo} alt="loading" />
+              </CloseButton>
+            </PopupHeaderDiv>
+          </PiModalHeader>
+          <hr />
+        </PopupHeaderContentDiv>
+        {loading && (
+          <SpinnerDiv>
+            <PiSpinner color="primary" size={50} libraryType="atalskit" />
+          </SpinnerDiv>
         )}
-        {pageLabel === "PO_Min_Qty" && (
-          <InnerBodyQuantity>
-            <PiInputForm
-              name="quantity"
-              label="Quantity"
-              onChange={(e: string) => handleChange(e, "name")}
-              libraryType="atalskit"
-              type="text"
-              placeholder="Quantity"
+        {!loading && (
+          <Formik
+            validationSchema={
+              props.pageLabel === "Vendors" ? VendorSchema : addSchema
+            }
+            onSubmit={(e: any) => handleSubmit(e)}
+            nameErr={nameErr}
+            setNameErr={setNameErr}
+            initialValues={initialValues}
+            innerRef={(e: any) => handleRef(e)}
+            onReset={() => resetForm()}
+            // initialStatus={isChecked}
+          >
+            {({ ...formikProps }: any) => (
+              <>
+                <PiModalBody>
+                  <FilterFormFields>
+                    {props.pageLabel === "Vendors" && (
+                      <InnerBodyQuantity>
+                        <AsyncSelectDiv style={{ margin: "10px 0" }}>
+                          <AsyncLabel
+                            htmlFor="async-select-example"
+                            className="css-re7y6x"
+                          >
+                            Vendor Code (Syspro ID)
+                            <span
+                              className="mandatory-star"
+                              style={{
+                                color: "red",
+                                paddingLeft: "4px",
+                              }}
+                            >
+                              *
+                            </span>
+                          </AsyncLabel>
+                          <Field name="supplier_code">
+                            {({ field, form, meta }: any) => (
+                              <>
+                                <AsyncSelect
+                                  name="supplier_code"
+                                  inputId="async-select-example"
+                                  classNamePrefix="multi-select job-number"
+                                  onInputChange={handleInputChanges}
+                                  loadOptions={promiseOptions}
+                                  placeholder="Search Code"
+                                  onChange={(value) => {
+                                    form.setFieldValue("supplier_code", value);
+                                    onSelectItemChange(value);
+                                  }}
+                                  isClearable
+                                  value={field.value}
+                                />
+                                <small className="validation-error date-range-validation-error">
+                                  {meta.touched && meta.error ? meta.error : ""}
+                                </small>
+                              </>
+                            )}
+                          </Field>
+                        </AsyncSelectDiv>
+                      </InnerBodyQuantity>
+                    )}
+                    {props.pageLabel === "Vendors" && (
+                      <InnerBody style={{ margin: "12px 0" }}>
+                        <PiInputForm
+                          name="supplier_name"
+                          label="Name"
+                          libraryType="atalskit"
+                          type="text"
+                          placeholder="Enter Name"
+                          className="Name"
+                          maxLength={30}
+                          onChange={() => setServerMsg(null)}
+                          // isMandatory
+                          isDisabled
+                        />
 
-            />
-          </InnerBodyQuantity>
+                        {/* <PiSelectForm
+                              name={"status"}
+                              label={"Status"}
+                              placeholder={isChecked ? "Active" : "InActive"}
+                              // isDisabled={true}
+                              classNamePrefix="react-select"
+                              options={
+                                isChecked
+                                  ? [
+                                      {
+                                        value: "false",
+                                        label: "InActive",
+                                      },
+                                    ]
+                                  : [
+                                      {
+                                        value: "true",
+                                        label: "Active",
+                                      },
+                                    ]
+                              }
+                              onChange={changeValue}
+                            /> */}
+                        <PiTextareaForm
+                          name="description"
+                          label="Description"
+                          value={areaValue}
+                          onChange={(e: any) => handleTextArea(e)}
+                          libraryType="atalskit"
+                          placeholder="Enter Description"
+                          maxLength={255}
+                        />
+
+                        <div className="width-100 checkbox-form-field">
+                          <Field name="is_different_pricing">
+                            {({ field }: any) => (
+                              <PiCheckbox
+                                helpText=""
+                                isChecked={field.value}
+                                label="Is Different Pricing"
+                                libraryType="atalskit"
+                                name="is_different_pricing"
+                                // value={field.value}
+                                onChange={(e: any) => onNcrChanged(e)}
+                                size="medium"
+                              />
+                            )}
+                          </Field>
+                        </div>
+
+                        <PiTextareaForm
+                          name="pos_mail"
+                          label="POS Mail"
+                          // value={posmailValue}
+                          // onChange={handlePosmailChange}
+                          libraryType="atalskit"
+                          placeholder="Enter Mail"
+                          // maxLength={255}
+                        />
+                        {/* <PiTextareaForm
+                              name="pos_test_mail"
+                              label="POS Test Mail"
+                              // value={posmailValue}
+                              // onChange={handlePosmailChange}
+                              libraryType="atalskit"
+                              placeholder="Enter Test Mail"
+                              // maxLength={255}
+                            /> */}
+                      </InnerBody>
+                    )}
+
+                    {props.pageLabel !== "PO_Min_Qty" &&
+                      props.pageLabel !== "Vendors" && (
+                        <InnerBody>
+                          <PiInputForm
+                            name="name"
+                            label="Name"
+                            libraryType="atalskit"
+                            type="text"
+                            placeholder="Name"
+                            className="Name"
+                            maxLength={30}
+                            onChange={() => setServerMsg(null)}
+                            isMandatory
+                          />
+                          {props.pageLabel === "Account_Types" && (
+                            <PiSelectForm
+                              name="mapping_accountype_id"
+                              label="Account Type Mapped With"
+                              placeholder="Select"
+                              options={accountTypeList}
+                              classNamePrefix="react-select"
+                            />
+                          )}
+
+                          <PiSelectForm
+                            name="status"
+                            label="Status"
+                            placeholder={isChecked ? "Active" : "InActive"}
+                            isDisabled
+                            classNamePrefix="react-select"
+                            options={
+                              isChecked
+                                ? [
+                                    {
+                                      value: "false",
+                                      label: "InActive",
+                                    },
+                                  ]
+                                : [
+                                    {
+                                      value: "true",
+                                      label: "Active",
+                                    },
+                                  ]
+                            }
+                          />
+                          <PiTextareaForm
+                            name="description"
+                            label="Description"
+                            value={areaValue}
+                            onChange={(e: any) => handleTextArea(e)}
+                            libraryType="atalskit"
+                            placeholder="Description"
+                            maxLength={255}
+                          />
+                        </InnerBody>
+                      )}
+                    {props.pageLabel === "PO_Min_Qty" && (
+                      <InnerBodyQuantity>
+                        <PiInputForm
+                          name="quantity"
+                          label="Quantity"
+                          libraryType="atalskit"
+                          type="number"
+                          placeholder="Enter Quantity"
+                          maxLength={10}
+                        />
+                      </InnerBodyQuantity>
+                    )}
+                  </FilterFormFields>
+                </PiModalBody>
+                {showerrormsg && (
+                  <span
+                    style={{
+                      margin: "0 24px",
+                      fontSize: "16px",
+                      color: "red",
+                    }}
+                  >
+                    {addVendorerrormsg || ""}
+                  </span>
+                )}
+                <PiModalFooter>
+                  {serverMsg && <div className="server-msg">{serverMsg}</div>}
+
+                  <PiButton
+                    appearance="secondary"
+                    label="Reset"
+                    onClick={formikProps.resetForm}
+                    type="reset"
+                    className="Secondary"
+                  />
+
+                  <PiButton
+                    appearance="primary"
+                    label="Add"
+                    onClick={formikProps.handleSubmit}
+                    className="Primary"
+                  />
+                </PiModalFooter>
+              </>
+            )}
+          </Formik>
         )}
-        {/* <PiSelectForm
-        name="status"
-        label="Status"
-        placeholder={make}
-        options={[
-          {
-            label: 'Active',
-            value: '1'
-          },
-          {
-            label: 'InActive',
-            value: '2'
-          }
-        ]}
-
-        onChange={e => handleMakeChange(e)}
-      /> */}
-      </FilterFormFields>
+      </PiModal>
     </Popup>
   );
-};
+}

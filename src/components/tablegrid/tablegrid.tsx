@@ -1,13 +1,9 @@
-import {Fragment} from "react";
-import React from "react";
+import { ReactNode } from "react";
+
 type Props = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 export default function TableGrid({ children }: Props) {
-  return (
-    <Fragment>
-      <div style={{ height: "100%" }}>{children}</div>
-    </Fragment>
-  );
+  return <div style={{ height: "100%" }}>{children}</div>;
 }

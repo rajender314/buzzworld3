@@ -1,59 +1,73 @@
-import { Fragment, useEffect, useState } from "react";
-import React from "react";
-
-import CommonLayout from "src/components/commonLayout";
-import { PageProps } from "src/services/schema/schema";
-import EndpointUrl from "src/core/apiEndpoints/endPoints";
-import DiscountImg from "src/assets/images/discountCodes.svg";
-import { triggerApi } from "src/services/api-services";
-import { ApiResponse } from "src/services/schema/schema";
+/* eslint-disable react/jsx-props-no-spreading */
+import { useEffect, useState } from "react";
+import { PageProps, ApiResponse } from "@app/services/schema/schema";
+import EndpointUrl from "@app/core/apiEndpoints/endPoints";
+import DiscountImg from "@app/assets/images/discountCodes.svg";
+import { triggerApi } from "@app/services/api-services";
+import { getUserPermissions } from "@app/helpers/componentHelpers";
+import AccesssDenied from "@app/modules/access-denied/component";
+import PricingLayout from "@app/components/pricingLayout/pricing-layout";
 
 export default function DiscountCodes() {
-  let [vendorsList, setVendorList]: any = useState([]);
-  useEffect(() => {
-    getVendorList();
-  }, []);
+  const [vendorsList, setVendorList]: any = useState([]);
+  const [loading, setloading] = useState(true);
+  const [isAllowed, setIsAllowed] = useState<any>(false);
   function getVendorList() {
+    let options: any = [];
     const apiObject = {
       payload: {},
       method: "GET",
-      apiUrl: `${EndpointUrl.vendorList}`,
-      headers: {}
+      apiUrl: `${EndpointUrl.DCVendors}`,
+      headers: {},
     };
     triggerApi(apiObject)
       .then((response: ApiResponse) => {
         if (response.result.success) {
-          vendorsList = response.result.data.list;
+          const data = response.result.data.list;
           let list = [];
-          list = vendorsList.map((item: any) => {
-            return {
-              key: item.id,
-              label: item.name,
-              ...item
-            };
-          });
-          vendorsList = list;
-          setVendorList(vendorsList);
+          list = data.map((item: any) => ({
+            key: item.id,
+            label: item.name,
+            ...item,
+          }));
+          options = list;
+          setVendorList(options);
           // console.log(list);
         }
       })
-      .catch((err: string) => {
-        console.log(err);
-      });
+      .catch(() => {});
   }
+  useEffect(() => {
+    (async () => {
+      const is_Allowed = await getUserPermissions("discount-codes", "View");
+      setloading(false);
+      setIsAllowed(is_Allowed);
+    })();
+  }, []);
+  useEffect(() => {
+    getVendorList();
+  }, []);
+
   const props: PageProps = {
     pageLabel: "Discount_Codes",
+    displayLabel: "Discount Codes",
     sideNavData: vendorsList,
     apiDataUrl: EndpointUrl.discountCodesApi,
     pageLogo: DiscountImg,
     apiData: {
       apiUrl: "",
-      params: {}
-    }
+      params: {},
+    },
   };
   return (
-    <Fragment>
-      <CommonLayout {...props}></CommonLayout>
-    </Fragment>
+    <>
+      {/* {loading && <Loader />} */}
+      {!loading && (
+        <>
+          {isAllowed && <PricingLayout {...props} />}
+          {!isAllowed && <AccesssDenied />}
+        </>
+      )}
+    </>
   );
 }

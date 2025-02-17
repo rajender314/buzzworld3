@@ -1,1 +1,3 @@
-export { default } from "./snackbar";
+import Snackbar from "./snackbar";
+
+export default Snackbar;

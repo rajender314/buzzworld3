@@ -1,32 +1,31 @@
-import React, { useState, Fragment, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   PiTypography,
-  PiButton,
   PiModal,
   PiModalHeader,
   PiModalBody,
-  PiModalFooter,
   PiGrid,
-  PiLabelName
+  PiLabelName,
 } from "pixel-kit";
 import {
   LabelNamesDiv,
-  ModelGridDiv
-} from "src/components/modelGrid/modelgrid.component";
-import CrossLogo from "../../assets/images/cross.svg"
-import { AccountTypePricing, } from "src/services/schema/schema";
+  ModelGridDiv,
+} from "@app/components/modelGrid/modelgrid.component";
+import { AccountTypePricing } from "@app/services/schema/schema";
+import CrossLogo from "../../assets/images/cross.svg";
 import { CloseButton } from "../adminaddrowmodel/adminaddrowmodel.component";
-import { PopupHeaderDiv } from "../fileuploadModel/fileuploadModel.component";
-type FileProps = {
-  success: boolean;
-};
+import {
+  PopupHeaderContentDiv,
+  PopupHeaderDiv,
+} from "../fileuploadModel/fileuploadModel.component";
+
 type Props = {
   data: AccountTypePricing;
   ColumnData: any[];
-  onFileSelect: (e?: FileProps) => {};
+  onFileSelect: any;
 };
 export default function ModelGrid(props: Props) {
-  console.log(props);
+  const { data, ColumnData, onFileSelect } = props;
   // let [columndata, setColumnData] = useState([]);
   const [openModel, setOpenModel] = useState(false);
   useEffect(() => {
@@ -35,64 +34,51 @@ export default function ModelGrid(props: Props) {
   function closeModel() {
     // console.log(222);
     setOpenModel(false);
-    let data = {
-      success: false
+    const obj = {
+      success: false,
     };
-    props.onFileSelect(data);
+    onFileSelect(obj);
   }
 
-  function onGridReady(e: any) {
-    console.log(e)
-  }
   return (
-    <Fragment>
-      <PiModal isOpen={openModel} width={794} >
+    <PiModal isOpen={openModel} width={794}>
+      <PopupHeaderContentDiv>
         <PiModalHeader>
           <PopupHeaderDiv>
-            {
-              <CloseButton
-                onClick={() => closeModel()}
-                title="close"
-                className="Hover"
-              >
-                {" "}
-                <img src={CrossLogo} alt="loading"></img>{" "}
-              </CloseButton>
-            }
-            <PiTypography component="h4">Account Type Pricing</PiTypography>
-            <hr />
+            <PiTypography component="h3">Account Type Pricing</PiTypography>
+            <CloseButton
+              onClick={() => closeModel()}
+              title="close"
+              className="Hover"
+            >
+              {" "}
+              <img src={CrossLogo} alt="loading" />
+            </CloseButton>
           </PopupHeaderDiv>
         </PiModalHeader>
-        <PiModalBody>
-          <LabelNamesDiv>
-            <div className="div">
-              <PiLabelName description={props.data.name} label="Stock Code" />
-              <PiLabelName
-                description={props.data.list_price}
-                label="List Price"
-              />
-              <PiLabelName
-                description={props.data.discount_code}
-                label="Discount Code"
-              />
-            </div>
+      </PopupHeaderContentDiv>
+      <PiModalBody>
+        <LabelNamesDiv>
+          <div className="div">
+            <PiLabelName description={data.name} label="Stock Code" />
+            <PiLabelName description={data.list_price} label="List Price" />
             <PiLabelName
-              description={props.data.description}
-              label="Description"
+              description={data.discount_code}
+              label="Discount Code"
             />
-          </LabelNamesDiv>
-          <ModelGridDiv>
-            <PiGrid
-              className="model-ag-grid"
-              columns={props.ColumnData}
-              mode="static"
-              onGridReady={onGridReady}
-              rowData={props.data.acc_type_pricelist}
-              rowHeight={40}
-            />
-          </ModelGridDiv>
-        </PiModalBody>
-      </PiModal>
-    </Fragment>
+          </div>
+          <PiLabelName description={data.description} label="Description" />
+        </LabelNamesDiv>
+        <ModelGridDiv style={{ margin: "16px 0px" }}>
+          <PiGrid
+            className="model-ag-grid"
+            columns={ColumnData}
+            mode="static"
+            rowData={data.acc_type_pricelist}
+            rowHeight={40}
+          />
+        </ModelGridDiv>
+      </PiModalBody>
+    </PiModal>
   );
 }

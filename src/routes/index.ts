@@ -1,1 +1,1 @@
-export {default as Routes} from './routes';
+export * as Routes from '@app/routes';

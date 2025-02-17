@@ -1,60 +1,27 @@
-import { Fragment, useEffect, useState } from "react";
-import React from "react";
-
-import CommonLayout from "src/components/commonLayout";
-import { PageProps } from "src/services/schema/schema";
-import EndpointUrl from "src/core/apiEndpoints/endPoints";
-import PricingImg from "src/assets/images/pricing.svg";
-import { triggerApi } from "src/services/api-services";
-import { ApiResponse } from "src/services/schema/schema";
+import { useEffect, useState } from "react";
+import SpDetailView from "@app/components/special-pricing-components/sp-detail-view/sp-detail-view";
+import { getUserPermissions } from "@app/helpers/componentHelpers";
+import AccesssDenied from "@app/modules/access-denied/component";
 
 export default function SpecialPricing() {
-  let [vendorsList, setVendorList]: any = useState([]);
+  const [isAllowed, setIsAllowed] = useState<boolean>(false);
+  const [loading, setloading] = useState(true);
   useEffect(() => {
-    getVendorList();
+    (async () => {
+      const is_allowed = await getUserPermissions("special-pricing", "View");
+      setloading(false);
+      setIsAllowed(is_allowed);
+    })();
   }, []);
-  function getVendorList() {
-    const apiObject = {
-      payload: {},
-      method: "GET",
-      apiUrl: `${EndpointUrl.vendorList}`,
-      headers: {}
-    };
-    triggerApi(apiObject)
-      .then((response: ApiResponse) => {
-        if (response.result.success) {
-          vendorsList = response.result.data.list;
-          console.log(vendorsList)
-          let list = [];
-          list = vendorsList.map((item: any) => {
-            return {
-              key: item.id,
-              label: item.name,
-              ...item
-            };
-          });
-          vendorsList = list;
-          setVendorList(vendorsList);
-          // console.log(list);
-        }
-      })
-      .catch((err: string) => {
-        console.log(err);
-      });
-  }
-  const props: PageProps = {
-    pageLabel: "Special_Pricing",
-    sideNavData: vendorsList,
-    apiDataUrl: EndpointUrl.specialPricingApi,
-    pageLogo: PricingImg,
-    apiData: {
-      apiUrl: "",
-      params: {}
-    }
-  };
+
   return (
-    <Fragment>
-       <CommonLayout {...props}></CommonLayout>
-    </Fragment>
+    <div style={{ display: "contents" }}>
+      {!loading && (
+        <>
+          {isAllowed && <SpDetailView />}
+          {!isAllowed && <AccesssDenied />}
+        </>
+      )}
+    </div>
   );
 }

@@ -1,5 +1,12 @@
-import {useTranslation} from 'react-i18next';
-import {Column, GridReadyEvent} from 'ag-grid-community';
+import {
+  getLocalStorage,
+  setLocalStorage,
+} from "@app/core/localStorage/localStorage";
+import {
+  QuoteSideList,
+  sideList,
+} from "@app/modules/organisations/component/organisationRenderdata";
+import { GlobalUserPermissions } from "./helpers";
 
 /*  eslint "require-jsdoc": ["error", {
       "require": {
@@ -8,17 +15,7 @@ import {Column, GridReadyEvent} from 'ag-grid-community';
           "FunctionExpression": true
     }
 }]  */
-/**
- * @param {string} label required params
- *  @param {string} lang required params
- * @return {string} language
- */
-export function GetLanguage(label: string, lang?: string) {
-  const {t, i18n} = useTranslation();
-  t(label);
-  lang ? i18n.changeLanguage(lang) : i18n.changeLanguage('eng');
-  return t(label);
-}
+
 /**
  * @param {string} props required params
  * @return {any} props
@@ -26,30 +23,138 @@ export function GetLanguage(label: string, lang?: string) {
 export function saveFilter(props: any) {
   return props;
 }
+let isAllowed: any;
 
 /**
- * @param {Array<object>} rowData required params
- * @param {GridReadyEvent} gridEvent required params
- * @return {Array} a new row
+ * @param {string} label required params
+ * @return {any} a new row
  */
-export function addRow(rowData: any, gridEvent: GridReadyEvent) {
-  const columnList: Column[] | null = gridEvent.columnApi.getAllColumns();
-  // console.log(columnList);
-  const elements: any = {};
-  columnList &&
-    columnList.map((obj: Column) => {
-      if (obj['colId'] === 'status') {
-        elements[obj['colId']] = true;
+async function getPerData(label: string, permissionType: string) {
+  // await userPermissions()
+  let userPerm: any = await getLocalStorage("userPermission");
+  userPerm = userPerm ? JSON.parse(userPerm) : null;
+  const tifOptions: any = [];
+  if (userPerm) {
+    Object.keys(userPerm.permissions).forEach((key) => {
+      tifOptions.push(userPerm.permissions[key]);
+    });
+  }
+  userPerm = tifOptions;
+  userPerm.map((obj: any, index: number) => {
+    if (
+      Object.prototype.hasOwnProperty.call(obj, label) &&
+      userPerm[index][label]
+    ) {
+      isAllowed = obj[label][permissionType];
+    }
+
+    return userPerm;
+  });
+  return isAllowed;
+}
+/**
+ * @param {string} label required params
+ * @return {any} a new row
+ */
+export async function getUserPermissions(
+  label: string,
+  permissionType: string
+) {
+  const a = await getPerData(label, permissionType);
+  return a;
+}
+
+/**
+ * @param {string} label required params
+ * @return {any} a new row
+ */
+export async function getPermissionObject(label: string) {
+  // console.log(label)
+  let userPerm: any = getLocalStorage("userPermission");
+  userPerm = userPerm ? JSON.parse(userPerm) : null;
+  let userObject = {};
+  const tifOptions: any = [];
+  Object.keys(userPerm.permissions).forEach((key) => {
+    tifOptions.push(userPerm.permissions[key]);
+  });
+
+  userPerm.permissions = tifOptions;
+  // console.log(userPerm)
+
+  if (userPerm.permissions) {
+    userPerm.permissions.map((obj: any, index: number) => {
+      if (
+        Object.prototype.hasOwnProperty.call(obj, label) &&
+        userPerm.permissions[index][label]
+      ) {
+        userObject = userPerm.permissions[index][label];
+        // console.log(userObject)
       } else {
-        elements[obj['colId']] = '';
+        return {};
       }
+      userObject = userPerm.permissions[index][label];
+      return userObject;
     });
-  rowData.unshift(elements);
-  setTimeout(() => {
-    gridEvent.api.startEditingCell({
-      rowIndex: 0,
-      colKey: 'name',
+    return userObject;
+  }
+  return userObject;
+}
+
+/**
+ * @return {any} a new row
+ */
+export async function getAdminMenuList() {
+  let updatedSideList = [];
+  let userPerm: any = await GlobalUserPermissions();
+  setLocalStorage("userPermission", userPerm);
+  // let userPerm: any = await getLocalStorage('userPermission')
+  userPerm = userPerm ? JSON.parse(userPerm) : null;
+  const tifOptions: any = [];
+  if (userPerm) {
+    Object.keys(userPerm.permissions).forEach((key) => {
+      tifOptions.push(userPerm.permissions[key]);
     });
-  }, 10);
-  return rowData;
+    updatedSideList = sideList.map((obj: any) => {
+      tifOptions.map(async (ele: any) => {
+        if (Object.prototype.hasOwnProperty.call(ele, obj.key)) {
+          obj.display = await ele[obj.key].View;
+        }
+        // if (obj.key === "qc_control") {
+        //  obj.display = true;
+        // }
+        return ele;
+      });
+      return obj;
+    });
+  }
+  return updatedSideList;
+}
+/**
+ * @return {any} a new row
+ */
+export async function getQuotesMenuList() {
+  let updatedSideList = [];
+  let userPerm: any = await GlobalUserPermissions();
+
+  // let userPerm: any = await getLocalStorage('userPermission')
+  userPerm = userPerm ? JSON.parse(userPerm) : null;
+  const tifOptions: any = [];
+  if (userPerm) {
+    Object.keys(userPerm.permissions).forEach((key) => {
+      tifOptions.push(userPerm.permissions[key]);
+    });
+    updatedSideList = QuoteSideList.map((obj: any) => {
+      tifOptions.map(async (ele: any) => {
+        if (Object.prototype.hasOwnProperty.call(ele, obj.key)) {
+          obj.display = await ele[obj.key].View;
+        }
+        // if (obj.key === "qc_control") {
+        //  obj.display = true;
+        // }
+        return ele;
+      });
+      return obj;
+    });
+  }
+  return updatedSideList;
 }

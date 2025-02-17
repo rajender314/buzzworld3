@@ -1,719 +1,582 @@
-/* eslint-disable no-useless-concat */
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable no-script-url */
 import {
   PiTypography,
   PiSearch,
-  PiSectionMessage,
-  PiLozenge,
-  PiIconDropdownMenu,
-  PiModal,
-  PiModalHeader,
-  PiModalBody,
-} from 'pixel-kit'
-import { Fragment, useState, useEffect } from 'react'
-import React from 'react'
+  PiToast,
+  PiConfirmModel,
+  PiTooltip,
+} from "pixel-kit";
+import {
+  useState,
+  useEffect,
+  lazy,
+  Suspense,
+  useRef,
+  ChangeEvent,
+} from "react";
 import DropdownMenu, {
   DropdownItem,
   DropdownItemGroup,
-} from '@atlaskit/dropdown-menu'
-import Trash from '../../assets/images/trash.svg'
-import ExportLogo from '../../assets/images/Export.svg'
-import ImportLogo from '../../assets/images/Import.svg'
-import AddLogo from '../../assets/images/addIcon.svg'
-import MultiEditLogo from '../../assets/images/multiEditIcon.svg'
-import SaveViewLogo from '../../assets/images/saveview.svg'
-import CrossLogo from '../../assets/images/cross.svg'
+} from "@atlaskit/dropdown-menu";
+import FilterIcon from "@app/assets/images/list_filter_icon.svg";
+
+import { triggerApi, token } from "@app/services/api-services";
+import EndpointUrl from "@app/core/apiEndpoints/endPoints";
+// import PrimaryHeader from './primaryheader.component'
+import SaveFilterModel from "@app/components/savefiltermodel";
+import {
+  ApiResponse,
+  GetFilterProps,
+  SavedFilterProps,
+  SubmitFilterProps,
+} from "@app/services/schema/schema";
+import {
+  getLocalStorage,
+  removeLocalStorage,
+  setLocalStorage,
+} from "@app/core/localStorage/localStorage";
+import {
+  getPermissionObject,
+  getUserPermissions,
+} from "@app/helpers/componentHelpers";
+import { getUserLoggedPermission } from "@app/helpers/helpers";
 import {
   SecondaryHeaderContainer,
   LeftContent,
   RightContent,
   DropdownDelete,
   DropdownDiv,
-  SaveViewDiv,
   ImgDiv,
   ButtonsGroup,
-  SearchDiv,
   ImgTag,
   LinkWithIcon,
-  ExportIconPopup,
-  ExportIconPopupHeader,
-} from './secondaryheader.component'
-import { triggerApi } from 'src/services/api-services'
-import EndpointUrl from 'src/core/apiEndpoints/endPoints'
-// import PrimaryHeader from './primaryheader.component'
-import SaveFilterModel from 'src/components/savefiltermodel'
-import FileUploadModel from 'src/components/fileuploadModel'
-import {
-  ApiResponse,
-  GetFilterProps,
-  SavedFilterProps,
-  SaveFilterProps,
-  SubmitFilterProps,
-} from 'src/services/schema/schema'
-import { SubscribeService } from 'src/services/subscribe-service'
-import MultiEditModel from 'src/components/multiEditModel/multiEditModel'
-import PricingAddRowModel from 'src/components/pricingAddRowModel/pricingAddRowModel'
-import DiscountAddRowModel from 'src/components/discountAddRowModel/discountAddRowModel'
-import SpecialPricingAddRowModel from '../specialPricingAddrowModal/specialPricingAddrowModal'
-import { CloseButton } from '../adminaddrowmodel/adminaddrowmodel.component'
-import { PopupHeaderDiv } from '../fileuploadModel/fileuploadModel.component'
+  AnimSyncImgTag,
+  SavedViewListContainer,
+} from "./secondaryheader.component";
+import AnimSyncLogo from "../../assets/images/Animation.gif";
+import SyncLogo from "../../assets/images/sync.svg";
+import SaveViewLogo from "../../assets/images/saveview.svg";
+import ExportLogo from "../../assets/images/Export.svg";
+import Trash from "../../assets/images/new_thrash.svg";
+import { FilterIconContainer } from "../Admin layout/adminLayouts.component";
+// import OrganizationsFilter from './organizations-filters'
+import FiltersResetContainer from "../parts-purchase-components/parts-purchase-filter/parts-purchase-filter-components";
+// import ContactsFilter from './contacts-filters'
+// import PastDueInvoiceFilter from './past-due-invoice-filters'
+const OrganizationsFilter = lazy(() => import("./organizations-filters"));
+const ContactsFilter = lazy(() => import("./contacts-filters"));
+const PastDueInvoiceFilter = lazy(() => import("./past-due-invoice-filters"));
 
-type Props = {
-  logo: string
-  data: string
-  searchkey: string
-  onChildClick: (e: SubmitFilterProps) => {}
-  searchEvent: (e: string) => {}
-  filterEvent: (e: GetFilterProps) => {}
-  onFileSelect: any
-}
-type FileProps = {
-  success: boolean
-}
 export default function SecondaryHeader({
   logo,
   data,
   searchkey,
+  // vendorName,
   onChildClick,
   searchEvent,
   filterEvent,
-  onFileSelect,
-}: Props) {
-  const [searchValue, setSearchValue] = useState('')
-  let [pageLabel, setPageLabel] = useState(data)
-  const [openModel, setOpenModel] = useState(false)
-  const [openPopupModel, setOpenPopupModel] = useState(false)
-  let [savedFilter, setSavedList] = useState([])
-  const [filterName, setSelectedFiltName] = useState('Saved Views')
-  let [filterlistResponse, setFilterlistResponse] = useState([])
-  let [reqInfo, setReqInfo] = useState({
-    body: {
-      branch_id: '',
-      vendor_id: '',
-    },
-    headers: {
-      Authorization: '',
-    },
-    method: '',
-    url: '',
-  })
-  const [openMultiModel, setMultiModel] = useState(false)
-  const [openAddRowModel, setOpenAddRowModel] = useState(false)
-  const [openAddRowDiscountModel, setOpenAddRowDiscountModel] = useState(false)
-  const [openAddRowSpecialPricing, setOpenAddRowSpecialPricing] = useState(
-    false,
-  )
-  const [organizationData, setOrganizationData] = useState([])
-  const itemsList = [
-    {
-      id: '1',
-      element: (
-        <LinkWithIcon href="javascript:void(0)" onClick={openAddRow}>
-          <ImgTag src={AddLogo} className="save-view Export-Image" />
-          <span className="link-icon-text">Add</span>
-        </LinkWithIcon>
-      ),
-    },
-    {
-      id: '2',
-      element: (
-        <LinkWithIcon href="javascript:void(0)" onClick={openModelWindow}>
-          <ImgTag
-            src={ImportLogo}
-            className="save-view Export-Image"
-            title="Import"
-          />
-          <span className="link-icon-text">Import</span>
-        </LinkWithIcon>
-      ),
-    },
-    {
-      id: '3',
-      element: (
-        <LinkWithIcon
-          // href={baseUrl + exportUrl}
-          onClick={exportData}
-        >
-          <ImgTag src={ExportLogo} className="save-view Export-Image" />
-          <span className="link-icon-text">Export</span>
-        </LinkWithIcon>
-      ),
-    },
-  ]
-  let baseUrl = process.env.REACT_APP_API_URL
+  filterdelete,
+  gridRowCount,
+  sendSyncData,
+  sendFilterEvent,
+  requestInfo,
+  sendOpacity,
+}: any) {
+  const { current }: any = useRef({ timer: 0 });
+  const [searchValue, setSearchValue] = useState("");
+  const [pageLabel, setPageLabel] = useState(data);
+  const [openModel, setOpenModel] = useState(false);
+  const [savedFilter, setSavedList] = useState([]);
+  const [filterName, setSelectedFiltName] = useState("Default");
+  const [filterlistResponse, setFilterlistResponse] = useState([]);
+  const [openSyncModel, setOpenSyncModel] = useState(false);
+  const [isEditable, setIsEditabe] = useState<any>(false);
+  const [isExportable, setExportable] = useState<any>(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [toastMsg, setToastMsg] = useState("");
+  const [showAnimSync, setShowAnimSync] = useState(false);
+  const [popupMessageShow, setPopupMessageShow] = useState(false);
+  const [confirmText, setConfirmText] = useState<any>();
+  const [gridDataLength, setGridDataLength] = useState<any>();
+  const [syncTitleHover, setSyncTitleHover] = useState<string>("Sync");
+  const baseUrl = process.env.REACT_APP_API_URL;
+  const localStorageData = getLocalStorage("userPermission");
+  const [pastDueSyncpermissionObject, setPastDueSyncpermissionObject] =
+    useState<any>({});
+  const [isFilters, setIsFilters] = useState<boolean>(false);
+  const [isSyncable, setSyncable] = useState<any>(false);
+  const [placeHolderText, setPlaceHolderText]: any = useState("");
+  const [linkWithName, setLinkWithName] = useState("");
+  const getPlaceHolgerText = () => {
+    if (data === "Past Due Invoices") {
+      setPlaceHolderText("Search By Customer ID / Name");
+    } else {
+      setPlaceHolderText("Name / Company Name / Account Number / Owner");
+    }
+  };
+  const linkWithClassName = () => {
+    if (!gridDataLength) {
+      setLinkWithName("save-view Export-Image disable-btns");
+    } else if (!isExportable) {
+      setLinkWithName("save-view Export-Image no-edit-permission");
+    } else {
+      setLinkWithName("save-view Export-Image");
+    }
+  };
+  useEffect(() => {
+    getPlaceHolgerText();
+  }, [data]);
 
-  function valueChanged(e: React.ChangeEvent<HTMLInputElement>) {
-    setSearchValue(e.target.value)
+  useEffect(() => {
+    linkWithClassName();
+  }, [gridDataLength, isExportable]);
+
+  useEffect(() => {
+    setSearchValue(requestInfo.searchkey);
+  }, [searchkey, requestInfo]);
+
+  useEffect(() => {
+    console.log(requestInfo);
+    if (requestInfo && requestInfo.saveFilterName) {
+      setSelectedFiltName(requestInfo.saveFilterName);
+    } else {
+      setSelectedFiltName("Default");
+    }
+  }, [requestInfo && requestInfo.saveFilterName]);
+
+  useEffect(() => {
+    if (
+      requestInfo &&
+      requestInfo.body &&
+      requestInfo.body.selectedCustomFilters &&
+      ((requestInfo.body.selectedCustomFilters.account_type &&
+        requestInfo.body.selectedCustomFilters.account_type.length) ||
+        (requestInfo.body.selectedCustomFilters.status &&
+          requestInfo.body.selectedCustomFilters.status.length) ||
+        (requestInfo.body.selectedCustomFilters.classification &&
+          requestInfo.body.selectedCustomFilters.classification.length) ||
+        (requestInfo.body.selectedCustomFilters.industry &&
+          requestInfo.body.selectedCustomFilters.industry.length) ||
+        (requestInfo.body.selectedCustomFilters.org_type &&
+          requestInfo.body.selectedCustomFilters.org_type.length) ||
+        (requestInfo.body.selectedCustomFilters.organization &&
+          requestInfo.body.selectedCustomFilters.organization.length) ||
+        (requestInfo.body.selectedCustomFilters.branch &&
+          requestInfo.body.selectedCustomFilters.branch.length))
+    ) {
+      setIsFilters(true);
+      console.log(requestInfo);
+    } else {
+      setIsFilters(false);
+    }
+  }, [requestInfo]);
+
+  function valueChanged(e: ChangeEvent<HTMLInputElement>) {
+    removeLocalStorage("gridResponse");
+    // setSearchValue(e.target.value)
+    // if (e.target.value && e.target.value.length >= 3) {
+    //    const interval = setInterval(() => {
+    //      searchEvent(e.target.value)
+    //    }, 1000)
+    //       return () => clearInterval(interval);
+    //  }
+    setSearchValue(e.target.value);
+    if (current.timer) clearTimeout(current.timer);
+    current.timer = setTimeout(() => {
+      searchEvent(e.target.value);
+    }, 1000);
+    // setLocalStorage('globalSearch', e.target.value)
   }
   function clearSearch() {
-    setSearchValue('')
-    searchEvent('')
+    removeLocalStorage("filter_name");
+    setSearchValue("");
+    setSelectedFiltName("Default");
+    searchEvent("");
   }
   // console.log(props);
   function openModelWindow() {
-    setOpenModel(true)
+    setOpenModel(true);
     // console.log(saveFilter(props));
   }
-  function openMultiEditModel() {
-    setMultiModel(true)
+
+  function syncData() {
+    setConfirmText("Are you sure you want to sync Data?");
+    setOpenSyncModel(true);
   }
-  function keyUp(e: any) {
-    if (e.target.value && e.target.value.length >= 3) {
-      setTimeout(() => {
-        searchEvent(searchValue)
-      }, 1000)
-    }
-  }
-
-  async function getModelEvent(e: SubmitFilterProps) {
-    // console.log(e);
-    if (e.filter_name !== '') {
-      setTimeout(() => {
-        getFilterData()
-      }, 500)
-      setOpenModel(false)
-      onChildClick(e)
-    } else {
-      setOpenModel(false)
-    }
-  }
-
-  async function getUploadEvent(e: SaveFilterProps) {
-    // console.log(e);
-    if (Object.keys(e).length) {
-      setOpenModel(false)
-      onFileSelect(e)
-    } else {
-      setOpenModel(false)
-    }
-  }
-
-  async function getUploadEvent2(e?: FileProps) {
-    // console.log(e);
-    if (e && e.success) {
-      setMultiModel(false)
-      onFileSelect(e)
-      setToast(true)
-      let toastMsg = 'Saved Succesfully'
-      setToastMsg(toastMsg)
-      setTimeout(() => {
-        setToast(false)
-      }, 1500)
-    } else {
-      setMultiModel(false)
-    }
-  }
-  async function getAddRowEvent(e?: FileProps) {
-    // console.log(e);
-
-    if (pageLabel === 'Pricing') {
-      if (e && e.success) {
-        setOpenAddRowModel(false)
-        onFileSelect(e)
-        setToast(true)
-        let toastMsg = 'Saved Succesfully'
-        setToastMsg(toastMsg)
-        setTimeout(() => {
-          setToast(false)
-        }, 1500)
-      } else {
-        setOpenAddRowModel(false)
-      }
-    } else if (pageLabel === 'Special Pricing') {
-      if (e && e.success) {
-        setOpenAddRowSpecialPricing(false)
-        onFileSelect(e)
-        setToast(true)
-        let toastMsg = 'Saved Succesfully'
-        setToastMsg(toastMsg)
-        setTimeout(() => {
-          setToast(false)
-        }, 1500)
-      } else {
-        setOpenAddRowSpecialPricing(false)
-      }
-    }
-  }
-  async function getAddRowDiscountEvent(e?: FileProps) {
-    // console.log(e);
-    if (e && e.success) {
-      setOpenAddRowDiscountModel(false)
-      onFileSelect(e)
-      setToast(true)
-      let toastMsg = 'Saved Succesfully'
-      setToastMsg(toastMsg)
-      setTimeout(() => {
-        setToast(false)
-      }, 1500)
-    } else {
-      setOpenAddRowDiscountModel(false)
-    }
-  }
-  let [exportUrl, setExportUrl] = useState<string>('')
-
-  useEffect(() => {
-    SubscribeService.getMessage().subscribe((data: any) => {
-      console.log(data)
-      if (data) {
-        reqInfo = data.data
-        setReqInfo(reqInfo)
-      }
-    })
-  }, [])
-
-  useEffect(() => {
-    getFilterData()
-    itemsRemoveList()
-    setSearchValue(searchkey)
-    if (
-      data === 'Account_Types' ||
-      data === 'Classifications' ||
-      data === 'Contact_Types' ||
-      data === 'Industry' ||
-      data === 'PO_Min_Qty' ||
-      data === 'Sales_Potential'
-    ) {
-      setPageLabel('Admin')
-    } else if (data === 'Vendors') {
-      setPageLabel('Pricing')
-    } else if (data === 'Discount_Codes') {
-      setPageLabel('Discount Codes')
-    } else if (data === 'Special_Pricing') {
-      setPageLabel('Special Pricing')
-    } else {
-      pageLabel = data
-      setPageLabel(pageLabel)
-    }
-    // let url: string = localStorage.getItem("appUrl") as string;
-    // // url = url.replace(`${process.env.REACT_APP_API_URL}`, "");
-    // if (url) {
-    //   url = url.substring(url.indexOf("&") + 1);
-    // }
-
-    // exportUrl = EndpointUrl.exportFilters.concat(
-    //   "?" + `${url}` + `&grid_name=${data.toLowerCase()}`
-    // );
-    // console.log(url);
-    // setExportUrl(exportUrl);
-    // console.log(setSearchValue(searchkey), searchValue);
-    // let a: any = localStorage.getItem("searchVal");
-    // setSearchValue(a);
-    // if (a) {
-    //   searchEvent(a);
-    // }
-
-    // console.log(subscription);
-  }, [searchkey])
   function getFilterData() {
     const apiObject = {
       payload: {},
-      method: 'GET',
+      method: "GET",
       apiUrl: `${EndpointUrl.filterDataApi}?name=${data.toLowerCase()}`,
       headers: {},
-    }
+    };
     triggerApi(apiObject)
       .then((response: ApiResponse) => {
         if (response.result.success) {
-          setOrganizationData(response.result.data.filters.organization)
-          let list = response.result.data.saved_filters
+          const list = response.result.data.saved_filters;
           list.unshift({
-            id: 'default',
-            filter_name: 'Default',
+            id: "default",
+            filter_name: "Default",
             is_delete_option: false,
-          })
-
-          // console.log(list);
-          setFilterlistResponse(list)
-          savedFilter = list.map((item: GetFilterProps) => {
-            return {
+          });
+          if (list && list.length) {
+            // console.log(list);
+            setFilterlistResponse(list);
+            const options = list.map((item: any) => ({
               value: item.id,
-              label: item.filter_name,
+              label: (
+                <div className="Button-Icon-Display">
+                  <LinkWithIcon className="Icon-space">
+                    <span className="link-icon-text">{item.filter_name}</span>
+                  </LinkWithIcon>
+                </div>
+              ),
               created_by: item.created_by,
               created_date: item.created_date,
               is_delete_option: item.is_delete_option,
-            }
-          })
-          setSavedList(savedFilter)
+              ...item,
+            }));
+            setSavedList(options);
+            setSyncTitleHover(response.result.data.last_sync_msg);
+          }
 
           // console.log(savedFilter);
         }
       })
       .catch((err: string) => {
-        console.log(err)
-      })
+        console.log(err);
+      });
   }
-  function openAddRow() {
-    if (pageLabel === 'Pricing') {
-      setOpenAddRowModel(true)
-    } else if (pageLabel === 'Special Pricing') {
-      setOpenAddRowSpecialPricing(true)
+  async function getModelEvent(e: SubmitFilterProps) {
+    console.log(e);
+    if (e.filter_name !== "") {
+      setSelectedFiltName(e.filter_name);
+      setTimeout(() => {
+        getFilterData();
+      }, 500);
+      setOpenModel(false);
+      onChildClick(e);
+    } else {
+      setOpenModel(false);
     }
   }
-  function openAddDiscountRow() {
-    setOpenAddRowDiscountModel(true)
-  }
-  function onFilterChanged(e: SavedFilterProps) {
-    // console.log(e);
-    setSelectedFiltName(e.label)
-    var index = filterlistResponse.findIndex(function (
-      element: GetFilterProps,
+
+  useEffect(() => {
+    (async () => {
+      // await GlobalUserPermissions()
+
+      // let data = await getUserPermissions(
+      //   window.location.pathname.substring(1),
+      //   "Edit"
+      // );
+      const sync_perm = await getPermissionObject("past_due_sync");
+      setPastDueSyncpermissionObject(sync_perm);
+
+      const is_Editable = await getUserPermissions(
+        window.location.pathname.substring(1),
+        "Edit"
+      );
+      setIsEditabe(is_Editable);
+      const exportLabel: any = window.location.pathname
+        .substring(1)
+        .concat("_export");
+      const is_Exportable: any = await getPermissionObject(exportLabel);
+      setExportable(is_Exportable[exportLabel]);
+      const syncLabel = window.location.pathname.substring(1).concat("_sync");
+      const is_Syncable: any = await getPermissionObject(syncLabel);
+      setSyncable(is_Syncable[syncLabel]);
+    })();
+  }, [isEditable, localStorageData]);
+
+  useEffect(() => {
+    setGridDataLength(gridRowCount);
+  }, [gridRowCount]);
+
+  useEffect(() => {
+    if (data !== "Past Due Invoices") {
+      getFilterData();
+    }
+    setSearchValue(searchkey);
+    if (
+      data === "Account_Types" ||
+      data === "Classifications" ||
+      data === "Contact_Types" ||
+      data === "Industry" ||
+      data === "PO_Min_Qty" ||
+      data === "Sales_Potential"
     ) {
-      return element.id === e.value
-    })
-    // console.log(index);
-    filterEvent(filterlistResponse[index])
+      setPageLabel("Admin");
+    } else if (data === "Vendors") {
+      setPageLabel("Pricing");
+    } else if (data === "Discount_Codes") {
+      setPageLabel("Discount Codes");
+    } else if (data === "Special_Pricing") {
+      setPageLabel("Special Pricing");
+    } else {
+      setPageLabel(data);
+    }
+    console.log(searchkey);
+  }, [searchkey]);
+  useEffect(() => {
+    let syncing;
+    const myInterval = setInterval(() => {
+      syncing = getLocalStorage("syncing");
+      if (syncing === "success") {
+        setShowAnimSync(false);
+        removeLocalStorage("syncing");
+        clearInterval(myInterval);
+      }
+    }, 5000);
+  }, []);
+  const onresetFilters = async () => {
+    const obj = {
+      selectedFilters: {
+        status: [],
+        account_type: [],
+        classification: [],
+        industry: [],
+        org_type: [],
+        organization: [],
+      },
+      filters: "organizations-filters",
+    };
+    sendFilterEvent(obj);
+  };
+  async function onFilterChanged(e: any) {
+    setSelectedFiltName(e.filter_name);
+    if (e.filter_name === "Default") {
+      onresetFilters();
+    }
+    const index = filterlistResponse.findIndex(
+      (element: GetFilterProps) => element.id === e.value
+    );
+    filterEvent(filterlistResponse[index]);
   }
 
   function deleteFilterName(item: SavedFilterProps) {
-    let id = item.value
-    let url = `${EndpointUrl.userSavedFilters}/`
+    const id = item.value;
+    const url = `${EndpointUrl.userSavedFilters}/`;
     // console.log(a);
 
     const apiObject = {
       payload: {},
-      method: 'DELETE',
+      method: "DELETE",
       apiUrl: url.concat(id),
       headers: {},
-    }
+    };
     triggerApi(apiObject)
       .then((response: ApiResponse) => {
         if (response.result.success) {
-          setToast(true)
-          let toastMsg = 'Filter Deleted Succesfully'
-          setToastMsg(toastMsg)
-          setTimeout(() => {
-            setToast(false)
-          }, 1500)
-          getFilterData()
+          removeLocalStorage("filter_name");
+          setSelectedFiltName("Default");
+          setToastMsg("Filter Deleted Succesfully");
+          getFilterData();
+          filterdelete(true);
         }
       })
       .catch((err: string) => {
-        console.log(err)
+        console.log(err);
+      });
+  }
+
+  async function exportData() {
+    const response = (await getLocalStorage("gridResponse")) as string;
+    if (response && JSON.parse(response).length) {
+      await setGridDataLength(true);
+    } else {
+      await setGridDataLength(false);
+    }
+    if (gridDataLength) {
+      sendOpacity(true);
+      let url: string = localStorage.getItem("appUrl") as string;
+      // url = url.replace(`${process.env.REACT_APP_API_URL}`, "");
+      if (url) {
+        url = url.substring(url.indexOf("&") + 1);
+      }
+
+      const expUrl = EndpointUrl.exportFilters.concat(
+        `?${url}&grid_name=${data.toLowerCase()}&token=${token}`
+      );
+      window.location.href = baseUrl + expUrl;
+
+      setTimeout(() => {
+        setToastMsg("Data is exported successfully");
+        sendOpacity(false);
+        setPopupMessageShow(true);
+      }, 1000);
+    }
+  }
+
+  function syncDataApi() {
+    setSuccessMsg(
+      "Syncing is being processed, an email will be sent to your registered email"
+    );
+    setToastMsg("Sync");
+    setPopupMessageShow(true);
+    const params = {
+      name:
+        data.toLowerCase() === "organizations"
+          ? "accounts"
+          : data.toLowerCase(),
+    };
+    const apiObject = {
+      payload: params || {},
+      method: "POST",
+      apiUrl: `${EndpointUrl.syncData}?name=${
+        data.toLowerCase() === "organizations" ? "accounts" : data.toLowerCase()
+      }`,
+      headers: {},
+    };
+    triggerApi(apiObject)
+      .then((response: ApiResponse) => {
+        if (response.result.success) {
+          setLocalStorage("syncing", "success");
+        } else {
+          setLocalStorage("syncing", "failed");
+        }
       })
+      .catch((err: string) => {
+        console.log(err);
+      });
   }
-
-  function exportData() {
-    let url: string = localStorage.getItem('appUrl') as string
-    // url = url.replace(`${process.env.REACT_APP_API_URL}`, "");
-    if (url) {
-      url = url.substring(url.indexOf('&') + 1)
-    }
-
-    exportUrl = EndpointUrl.exportFilters.concat(
-      '?' + `${url}` + `&grid_name=${data.toLowerCase()}`,
-    )
-    let toastMsg = 'Data is exported sucessfully'
-    setToastMsg(toastMsg)
-    setToast(true)
-    setTimeout(() => {
-      setToast(false)
-    }, 1500)
-    console.log(url)
-    setExportUrl(exportUrl)
-    console.log(exportUrl)
-    window.location.href = baseUrl + exportUrl
-    // const apiObject = {
-    //   payload: {},
-    //   method: "GET",
-    //   apiUrl: url,
-    //   headers: {}
-    // };
-    // triggerApi(apiObject)
-    //   .then(() => {
-
-    //   })
-    //   .catch((err: string) => {
-    //     console.log(err);
-    //   });
-  }
-  function closeModel() {
-    // console.log(222);
-    setOpenPopupModel(false)
-  }
-  function exportDataMail() {
-    // let toastMsg = 'Data is being exporting. Please wait...'
-    // setToastMsg(toastMsg)
-    // setToast(true)
-    // setTimeout(() => {
-    //   setToast(false)
-    // }, 1500)
-    setOpenPopupModel(true)
-    let expurl: string = localStorage.getItem('appUrl') as string
-    console.log(expurl)
-    // url = url.replace(`${process.env.REACT_APP_API_URL}`, "");
-    if (expurl) {
-      console.log(expurl.indexOf('&'))
-      expurl = expurl.substring(expurl.indexOf('&') + 1)
-      console.log(expurl)
-    }
-
-    let exportUrl = EndpointUrl.exportDataByMail.concat(
-      '?' + `${expurl}` + `&grid_name=${data.toLowerCase()}`,
-    )
-    let url = `${exportUrl}&grid_name=${data.toLowerCase()}`
-    exportUrl = url
-    setExportUrl(exportUrl)
-
-    // let url2 = `${url}?page=${pageNumber}&sort=${sort}&sort_key=${sortkey}`
-
+  const onPastDueReportSync = () => {
+    setConfirmText("Are you sure you want to sync Data?");
+    setOpenSyncModel(true);
+  };
+  const onPastDueReportSyncApi = () => {
+    setShowAnimSync(true);
     const apiObject = {
       payload: {},
-      method: 'GET',
-      apiUrl: url,
+      method: "GET",
+      apiUrl: `${EndpointUrl.getPastDueReportSync}`,
       headers: {},
-    }
+    };
     triggerApi(apiObject)
-      .then((response: ApiResponse) => {
-        if (response.result.success) {
-          // setToast(true)
-          let toastMsg = response.result.data
-          setToastMsg(toastMsg)
-
-          // setTimeout(() => {
-          //   // setToast(false)
-          //   // setOpenPopupModel(false)
-          // }, 1500)
+      .then((response: any) => {
+        if (response.result.success && response.result.status_code === 200) {
+          sendSyncData({ sync: true, msg: response.result.message });
+          setShowAnimSync(false);
+        } else {
+          sendSyncData({ sync: false, msg: response.result.message });
+          setShowAnimSync(false);
         }
       })
       .catch((err: string) => {
-        console.log(err)
-      })
-    // setOpenPopupModel(true)
+        console.log(err);
+      });
+  };
+  const [openPastDueFilters, setPastDueFilters] = useState(false);
+  async function getConfirmModelEvent(e: any) {
+    if (e === "accept" && pageLabel !== "Past Due Invoices") {
+      setShowAnimSync(true);
+      setTimeout(() => {
+        syncDataApi();
+      }, 1000);
+    } else if (e === "accept" && pageLabel === "Past Due Invoices") {
+      setTimeout(() => {
+        onPastDueReportSyncApi();
+      }, 1000);
+    } else {
+      setShowAnimSync(false);
+    }
+    setOpenSyncModel(false);
   }
 
-  const [toastMsg, setToastMsg] = useState('111')
-  const [showToast, setToast] = useState(false)
-
-  const itemsRemoveList = () => {
-    itemsList.splice(1, 1)
-    return itemsList
-  }
+  const openOrganizationFilter = () => {
+    setShowFilters(true);
+  };
+  const getOrganizationFilterEvent = async (e: any) => {
+    if (e && e.CloseModel) {
+      setShowFilters(false);
+    } else if (e && e.section === "organizations-filters") {
+      setShowFilters(false);
+      sendFilterEvent({ filters: "organizations-filters", ...e });
+    }
+    setPastDueFilters(false);
+  };
 
   return (
-    <Fragment>
-      <SecondaryHeaderContainer>
-        <LeftContent>
-          <img src={logo} alt="loading" />
-          <PiTypography component="h1">{pageLabel}</PiTypography>
-        </LeftContent>
-        <RightContent>
-          {pageLabel !== 'Admin' && pageLabel !== 'Discount Codes' && (
+    <SecondaryHeaderContainer>
+      <LeftContent style={{ width: "unset", marginRight: "16px" }}>
+        <img src={logo} alt="loading" />
+        <PiTypography component="h1">{pageLabel}</PiTypography>
+        {pageLabel !== "Past Due Invoices" && (
+          <SavedViewListContainer>
+            <PiTooltip content={filterName}>
+              {getUserLoggedPermission() && (
+                <DropdownMenu trigger={filterName}>
+                  <DropdownItemGroup>
+                    {savedFilter.map((item: SavedFilterProps) => (
+                      <DropdownDiv>
+                        <DropdownItem onClick={() => onFilterChanged(item)}>
+                          <div className="savedViews">
+                            <p>{item.label}</p>
+                            {item.is_delete_option && (
+                              <DropdownDelete
+                                className={
+                                  !isEditable
+                                    ? "Icon-space no-edit-permission"
+                                    : "Icon-space"
+                                }
+                                onClick={() => deleteFilterName(item)}
+                              >
+                                <ImgDiv>
+                                  <img src={Trash} alt="loading" />
+                                </ImgDiv>
+                              </DropdownDelete>
+                            )}
+                          </div>
+                        </DropdownItem>
+                      </DropdownDiv>
+                    ))}
+                  </DropdownItemGroup>
+                </DropdownMenu>
+              )}
+            </PiTooltip>
+          </SavedViewListContainer>
+        )}
+      </LeftContent>
+      <RightContent>
+        {pageLabel !== "Admin" && (
+          <div className="quote-search-width" style={{ width: "38%" }}>
             <PiSearch
               libraryType="atalskit"
-              onClear={clearSearch}
+              onClear={() => clearSearch()}
               onValueChange={(e) => valueChanged(e)}
-              onKeyUp={(e) => keyUp(e)}
-              placeholder="Search"
+              placeholder={placeHolderText}
               value={searchValue}
-              maxLength={15}
             />
-          )}
-          {showToast && (
-            <PiSectionMessage appearance="success" title={toastMsg}>
-              <span></span>
-            </PiSectionMessage>
-          )}
-          {pageLabel === 'Discount Codes' && (
-            <SearchDiv>
-              <PiSearch
-                libraryType="atalskit"
-                onClear={clearSearch}
-                onValueChange={(e) => valueChanged(e)}
-                onKeyUp={(e) => keyUp(e)}
-                placeholder="Search"
-                value={searchValue}
-                maxLength={15}
-              />
-            </SearchDiv>
-          )}
-          {openPopupModel === true && (
-            <>
-              <PiModal isOpen={openPopupModel}>
-                <ExportIconPopupHeader>
-                  <PiModalHeader>
-                    <PopupHeaderDiv>
-                      {
-                        <CloseButton
-                          onClick={() => closeModel()}
-                          title="close"
-                          className="Hover"
-                        >
-                          {' '}
-                          <img src={CrossLogo} alt="loading"></img>{' '}
-                        </CloseButton>
-                      }
-                      <PiTypography component="h4">Export Data</PiTypography>
-                      <hr />
-                    </PopupHeaderDiv>
-                  </PiModalHeader>
-                </ExportIconPopupHeader>
-                <PiModalBody>
-                  <ExportIconPopup>
-                    <p>
-                      {' '}
-                      Your export is being processed, an email will be sent with
-                      the file attachment to your registered email
-                    </p>
-                  </ExportIconPopup>
-                </PiModalBody>
-              </PiModal>
-            </>
-          )}
-          {/* <SelectDiv>
-            <PiSelect
-              label="Select Filter Name"
-              libraryType="atalskit"
-              name="select"
-              onChange={e => onFilterChanged(e)}
-              options={savedFilter}
-              placeholder="select..."
-            />
-          </SelectDiv> */}
-          {pageLabel !== 'Admin' &&
-            pageLabel !== 'Pricing' &&
-            pageLabel !== 'Discount Codes' &&
-            pageLabel !== 'Special Pricing' && (
-              <ButtonsGroup>
-                <>
-                  <DropdownMenu trigger={filterName}>
-                    <DropdownItemGroup>
-                      {savedFilter.map(function (
-                        item: SavedFilterProps,
-                        i: number,
-                      ) {
-                        return (
-                          <>
-                            <DropdownDiv key={i}>
-                              <DropdownItem
-                                onClick={() => onFilterChanged(item)}
-                              >
-                                <p>{item.label}</p>
-                                <p>
-                                  <small>{item.created_date}</small>
-                                </p>
-                                <p>
-                                  {/* <span>{item.created_by}</span> */}
-                                  {item.created_by && (
-                                    <PiLozenge
-                                      appearance="success"
-                                      maxWidth="100px"
-                                    >
-                                      {item.created_by}
-                                    </PiLozenge>
-                                  )}
-                                </p>
-                              </DropdownItem>
-
-                              {item.is_delete_option && (
-                                <DropdownDelete
-                                  onClick={() => deleteFilterName(item)}
-                                >
-                                  <ImgDiv>
-                                    <img src={Trash} alt="loading" />
-                                  </ImgDiv>
-                                </DropdownDelete>
-                              )}
-                            </DropdownDiv>
-                          </>
-                        )
-                      })}
-                    </DropdownItemGroup>
-                  </DropdownMenu>
-                  {/* <p>Filters Applied: {filterName}</p> */}
-                  <div className="More-Options">
-                    <PiIconDropdownMenu
-                      items={[
-                        {
-                          id: '1',
-                          element: (
-                            <LinkWithIcon
-                              // eslint-disable-next-line no-script-url
-                              href="javascript:void(0)"
-                              onClick={openModelWindow}
-                            >
-                              <ImgTag
-                                src={SaveViewLogo}
-                                className="save-view Export-Image"
-                              />
-                              <span className="link-icon-text">Save View</span>
-                            </LinkWithIcon>
-                          ),
-                        },
-                        {
-                          id: '2',
-                          element: (
-                            <LinkWithIcon
-                              href="javascript:void(0)"
-                              // href={baseUrl + exportUrl}
-                              onClick={exportData}
-                            >
-                              <ImgTag
-                                src={ExportLogo}
-                                className="save-view Export-Image"
-                              />
-                              <span className="link-icon-text">Export</span>
-                            </LinkWithIcon>
-                          ),
-                        },
-                      ]}
-                      onOpenChange={function noRefCheck() {}}
-                    />
-                  </div>
-                  <SaveViewDiv>
-                    {openModel && (
-                      <SaveFilterModel
-                        data={openModel}
-                        // userList={userList}
-                        onChildClick={getModelEvent}
-                      ></SaveFilterModel>
-                    )}
-                  </SaveViewDiv>
-                  {/* <div className="More-Options">
-                  <PiIconDropdownMenu
-                    items={[
-                      {
-                        id: '1',
-                        element: (
-                          <LinkWithIcon
-                            // eslint-disable-next-line no-script-url
-                            href="javascript:void(0)"
-                            onClick={openModelWindow}
-                          >
-                            <ImgTag
-                              src={SaveViewLogo}
-                              className="save-view Export-Image"
-                            />
-                            <span className="link-icon-text">Save View</span>
-                          </LinkWithIcon>
-                        ),
-                      },
-                      {
-                        id: '2',
-                        element: (
-                          <LinkWithIcon
-                            // href={baseUrl + exportUrl}
-                            onClick={exportData}
-                          >
-                            <ImgTag
-                              src={ExportLogo}
-                              className="save-view Export-Image"
-                            />
-                            <span className="link-icon-text">Export</span>
-                          </LinkWithIcon>
-                        ),
-                      },
-                    ]}
-                    onOpenChange={function noRefCheck() { }}
-                  />
-                  </div> */}
-                </>
-                <div className="Button-Icon-Display">
+          </div>
+        )}
+        <PiToast
+          className={popupMessageShow ? "show" : ""}
+          headerLabel={toastMsg}
+          message={successMsg}
+          onClose={async () => {
+            setPopupMessageShow(false);
+            setSuccessMsg("");
+          }}
+        />
+        {requestInfo &&
+          requestInfo.body &&
+          pageLabel !== "Past Due Invoices" && (
+            <ButtonsGroup>
+              {openModel && (
+                <SaveFilterModel
+                  label={data}
+                  // userList={userList}
+                  onChildClick={(e: any) => getModelEvent(e)}
+                />
+              )}
+              <div className="Button-Icon-Display">
+                {getUserLoggedPermission() && (
                   <LinkWithIcon
-                    className="Icon-space"
-                    // eslint-disable-next-line no-script-url
-                    href="javascript:void(0)"
-                    onClick={openModelWindow}
+                    onClick={() => openModelWindow()}
+                    className={
+                      !isEditable
+                        ? "Icon-space no-edit-permission"
+                        : "Icon-space"
+                    }
                   >
                     <ImgTag
                       src={SaveViewLogo}
@@ -721,339 +584,279 @@ export default function SecondaryHeader({
                     />
                     <span className="link-icon-text">Save View</span>
                   </LinkWithIcon>
-
+                )}
+                <PiTooltip content={syncTitleHover} libraryType="atalskit">
                   <LinkWithIcon
-                    href="javascript:void(0)"
-                    // href={baseUrl + exportUrl}
-                    onClick={exportData}
+                    onClick={() => {
+                      syncData();
+                    }}
+                    className={
+                      !isSyncable
+                        ? "Icon-space no-edit-permission"
+                        : "Icon-space"
+                    }
                   >
-                    <ImgTag
-                      src={ExportLogo}
-                      className="save-view Export-Image"
-                    />
-                    <span className="link-icon-text">Export</span>
-                  </LinkWithIcon>
-                </div>
-              </ButtonsGroup>
-            )}
-          {(pageLabel === 'Pricing' ||
-            pageLabel === 'Discount Codes' ||
-            pageLabel === 'Special Pricing') && (
-            <ButtonsGroup>
-              {pageLabel === 'Discount Codes' && (
-                <>
-                  <div className="More-Options">
-                    <PiIconDropdownMenu
-                      items={[
-                        {
-                          id: '1',
-                          element: (
-                            <LinkWithIcon
-                              // eslint-disable-next-line no-script-url
-                              href="javascript:void(0)"
-                              onClick={openMultiEditModel}
-                            >
-                              <ImgTag
-                                src={MultiEditLogo}
-                                className="save-view Export-Image"
-                              />
-                              <span className="link-icon-text">Multi Edit</span>
-                            </LinkWithIcon>
-                          ),
-                        },
-                        {
-                          id: '2',
-                          element: (
-                            <LinkWithIcon
-                              // eslint-disable-next-line no-script-url
-                              href="javascript:void(0)"
-                              onClick={openAddDiscountRow}
-                            >
-                              <ImgTag
-                                src={AddLogo}
-                                className="save-view Export-Image"
-                              />
-                              <span className="link-icon-text">Add</span>
-                            </LinkWithIcon>
-                          ),
-                        },
-                        {
-                          id: '3',
-                          element: (
-                            <LinkWithIcon
-                              // href={baseUrl + exportUrl}
-                              onClick={exportData}
-                            >
-                              <ImgTag
-                                src={ExportLogo}
-                                className="save-view Export-Image"
-                              />
-                              <span className="link-icon-text">Export</span>
-                            </LinkWithIcon>
-                          ),
-                        },
-                      ]}
-                      onOpenChange={function noRefCheck() {}}
-                    />
-                  </div>
-                  {/* <div className="More-Options">
-                    <PiIconDropdownMenu
-                      items={[
-                        {
-                          id: '1',
-                          element: (
-                            <LinkWithIcon
-                              // eslint-disable-next-line no-script-url
-                              href="javascript:void(0)"
-                              onClick={openMultiEditModel}
-                            >
-                              <ImgTag
-                                src={MultiEditLogo}
-                                className="save-view Export-Image"
-                              />
-                              <span className="link-icon-text">Multi Edit</span>
-                            </LinkWithIcon>
-                          ),
-                        },
-                        {
-                          id: '2',
-                          element: (
-                            <LinkWithIcon
-                              // eslint-disable-next-line no-script-url
-                              href="javascript:void(0)"
-                              onClick={openAddDiscountRow}
-                            >
-                              <ImgTag
-                                src={ExportLogo}
-                                className="save-view Export-Image"
-                              />
-                              <span className="link-icon-text">Add</span>
-                            </LinkWithIcon>
-                          ),
-                        },
-                        {
-                          id: '3',
-                          element: (
-                            <LinkWithIcon
-                              // href={baseUrl + exportUrl}
-                              onClick={exportData}
-                            >
-                              <ImgTag
-                                src={ExportLogo}
-                                className="save-view Export-Image"
-                              />
-                              <span className="link-icon-text">Export</span>
-                            </LinkWithIcon>
-                          ),
-                        },
-                      ]}
-                      onOpenChange={function noRefCheck() { }}
-                    />
-                    </div> */}
-                  <SaveViewDiv>
-                    {openMultiModel && (
-                      <MultiEditModel
-                        reqInfo={reqInfo}
-                        // userList={userList}
-                        onFileSelect={getUploadEvent2}
-                      ></MultiEditModel>
-                    )}
-                  </SaveViewDiv>
-                  <SaveViewDiv>
-                    {openAddRowDiscountModel && (
-                      <DiscountAddRowModel
-                        reqInfo={reqInfo}
-                        onFileSelect={getAddRowDiscountEvent}
-                      ></DiscountAddRowModel>
-                    )}
-                  </SaveViewDiv>
-                  <div className="Button-Icon-Display">
-                    <LinkWithIcon
-                      className="Icon-space"
-                      // eslint-disable-next-line no-script-url
-                      href="javascript:void(0)"
-                      onClick={openMultiEditModel}
-                    >
-                      <ImgTag
-                        src={MultiEditLogo}
-                        className="save-view Export-Image"
-                      />
-                      <span className="link-icon-text">Multi Edit</span>
-                    </LinkWithIcon>
-                    <LinkWithIcon
-                      className="Icon-space"
-                      // eslint-disable-next-line no-script-url
-                      href="javascript:void(0)"
-                      onClick={openAddDiscountRow}
-                    >
-                      <ImgTag
-                        src={AddLogo}
-                        className="save-view Export-Image"
-                      />
-                      <span className="link-icon-text">Add</span>
-                    </LinkWithIcon>
-                    <LinkWithIcon
-                      href="javascript:void(0)"
-                      // href={baseUrl + exportUrl}
-                      onClick={exportData}
-                    >
-                      <ImgTag
-                        src={ExportLogo}
-                        className="save-view Export-Image"
-                      />
-                      <span className="link-icon-text">Export</span>
-                    </LinkWithIcon>
-                  </div>
-                </>
-              )}
-              {(pageLabel === 'Pricing' || pageLabel === 'Special Pricing') && (
-                <>
-                  <div className="More-Options">
-                    <PiIconDropdownMenu
-                      items={
-                        pageLabel === 'Special Pricing'
-                          ? itemsRemoveList()
-                          : itemsList
-                      }
-                      onOpenChange={function noRefCheck() {}}
-                    />
-                  </div>
-                  {pageLabel === 'Pricing' && (
-                    <>
-                      <div className="Button-Icon-Display">
-                        <LinkWithIcon
-                          className="Icon-space"
-                          href="javascript:void(0)"
-                          onClick={openAddRow}
-                        >
-                          <ImgTag
-                            src={AddLogo}
-                            className="save-view Export-Image"
-                          />
-                          <span className="link-icon-text">Add</span>
-                        </LinkWithIcon>
-                        <LinkWithIcon
-                          className="Icon-space"
-                          href="javascript:void(0)"
-                          onClick={openModelWindow}
-                        >
-                          <ImgTag
-                            src={ImportLogo}
-                            className="save-view Export-Image"
-                            title="Import"
-                          />
-                          <span className="link-icon-text">Import</span>
-                        </LinkWithIcon>
-
-                        <LinkWithIcon
-                          href="javascript:void(0)"
-                          // href={baseUrl + exportUrl}
-                          onClick={exportDataMail}
-                        >
-                          <ImgTag
-                            src={ExportLogo}
-                            className="save-view Export-Image"
-                          />
-                          <span className="link-icon-text">Export</span>
-                        </LinkWithIcon>
-                      </div>
-                      <SaveViewDiv>
-                        {openAddRowModel && (
-                          <PricingAddRowModel
-                            reqInfo={reqInfo}
-                            onFileSelect={getAddRowEvent}
-                          ></PricingAddRowModel>
-                        )}
-                      </SaveViewDiv>
-                    </>
-                  )}
-                  {pageLabel === 'Special Pricing' && (
-                    <>
-                      <div className="Button-Icon-Display">
-                        <LinkWithIcon
-                          className="Icon-space"
-                          href="javascript:void(0)"
-                          onClick={openAddRow}
-                        >
-                          <ImgTag
-                            src={AddLogo}
-                            className="save-view Export-Image"
-                          />
-                          <span className="link-icon-text">Add</span>
-                        </LinkWithIcon>
-                        <LinkWithIcon
-                          href="javascript:void(0)"
-                          // href={baseUrl + exportUrl}
-                          onClick={exportData}
-                        >
-                          <ImgTag
-                            src={ExportLogo}
-                            className="save-view Export-Image"
-                          />
-                          <span className="link-icon-text">Export</span>
-                        </LinkWithIcon>
-                      </div>
-                      <SaveViewDiv>
-                        {openAddRowSpecialPricing && (
-                          <SpecialPricingAddRowModel
-                            reqInfo={reqInfo}
-                            organizationData={organizationData}
-                            onFileSelect={getAddRowEvent}
-                          ></SpecialPricingAddRowModel>
-                        )}
-                      </SaveViewDiv>
-                    </>
-                  )}
-                </>
-              )}
-              {/* { pageLabel === 'Pricing' || pageLabel === 'Special Pricing' && (
-                    <>
-                      <div className="More-Options">
-                        <PiIconDropdownMenu
-                          items={
-                            pageLabel === 'Special Pricing'
-                              ? itemsRemoveList()
-                              : itemsList
-                          }
-                          onOpenChange={function noRefCheck() { }}
+                    {!showAnimSync && (
+                      <>
+                        <ImgTag
+                          src={SyncLogo}
+                          className="save-view Export-Image"
                         />
-                      </div>
-
-                      <SaveViewDiv>
-                        {openAddRowModel && (
-                          <PricingAddRowModel
-                            reqInfo={reqInfo}
-                            onFileSelect={getAddRowEvent}
-                          ></PricingAddRowModel>
-                        )}
-                      </SaveViewDiv>
-                      <SaveViewDiv>
-                        {openAddRowSpecialPricing && (
-                          <SpecialPricingAddRowModel
-                            reqInfo={reqInfo}
-                            organizationData={organizationData}
-                            onFileSelect={getAddRowEvent}
-                          ></SpecialPricingAddRowModel>
-                        )}
-                      </SaveViewDiv>
-                    </>
-                  )} */}
-              {pageLabel !== 'Discount Codes' && (
-                <>
-                  <SaveViewDiv>
-                    {openModel && (
-                      <FileUploadModel
-                        //reqInfo={reqInfo}
-                        onFileSelect={getUploadEvent}
-                      ></FileUploadModel>
+                        <span className="link-icon-text">Sync</span>
+                      </>
                     )}
-                  </SaveViewDiv>
-                </>
-              )}
+                    {showAnimSync && (
+                      <>
+                        <AnimSyncImgTag
+                          src={AnimSyncLogo}
+                          className="save-view Export-Image"
+                          title="Syncing is in progress..."
+                          alt="loading"
+                        />
+                        <span
+                          className="link-icon-text"
+                          title="Syncing is in progress..."
+                        >
+                          Sync
+                        </span>
+                      </>
+                    )}
+                  </LinkWithIcon>
+                </PiTooltip>
+
+                <LinkWithIcon
+                  // href={baseUrl + exportUrl}
+                  className={linkWithName}
+                  onClick={() => exportData()}
+                >
+                  <ImgTag
+                    src={ExportLogo}
+                    alt="loading"
+                    className={linkWithName}
+                  />
+                  <span className="link-icon-text">Export</span>
+                </LinkWithIcon>
+
+                <div style={{ display: "flex", gap: "4px" }}>
+                  {pageLabel === "Organizations" && (
+                    <>
+                      <FilterIconContainer
+                        onClick={openOrganizationFilter}
+                        className={isFilters ? "open" : ""}
+                        title={isFilters ? "Filters Applied" : ""}
+                        style={{ marginLeft: "16px" }}
+                      >
+                        <img src={FilterIcon} alt="loading" />
+                        <div className="filter-text">Filters</div>
+                        {requestInfo.body &&
+                        requestInfo.body.selectedCustomFilters &&
+                        ((requestInfo.body.selectedCustomFilters.account_type &&
+                          requestInfo.body.selectedCustomFilters.account_type
+                            .length) ||
+                          (requestInfo.body.selectedCustomFilters
+                            .classification &&
+                            requestInfo.body.selectedCustomFilters
+                              .classification.length) ||
+                          (requestInfo.body.selectedCustomFilters.industry &&
+                            requestInfo.body.selectedCustomFilters.industry
+                              .length) ||
+                          (requestInfo.body.selectedCustomFilters.status &&
+                            requestInfo.body.selectedCustomFilters.status
+                              .length) ||
+                          (requestInfo.body.selectedCustomFilters.org_type &&
+                            requestInfo.body.selectedCustomFilters.org_type
+                              .length)) ? (
+                          <span>
+                            {requestInfo.body.selectedCustomFilters.status
+                              .length +
+                              requestInfo.body.selectedCustomFilters
+                                .account_type.length +
+                              requestInfo.body.selectedCustomFilters
+                                .classification.length +
+                              requestInfo.body.selectedCustomFilters.industry
+                                .length +
+                              requestInfo.body.selectedCustomFilters.org_type
+                                .length}
+                          </span>
+                        ) : (
+                          ""
+                        )}
+                      </FilterIconContainer>
+                      {isFilters && (
+                        <FiltersResetContainer
+                          onClick={onresetFilters}
+                          className="open"
+                          title={isFilters ? "Reset Filters " : ""}
+                        >
+                          {/* <img src={ResetFilterIcon} alt="loading" /> */}
+                          <span className="clear-text">Clear</span>
+                        </FiltersResetContainer>
+                      )}
+                    </>
+                  )}
+
+                  {pageLabel === "Contacts" && (
+                    <>
+                      <FilterIconContainer
+                        onClick={openOrganizationFilter}
+                        className={isFilters ? "open" : ""}
+                        title={isFilters ? "Filters Applied" : ""}
+                        style={{ marginLeft: "16px" }}
+                      >
+                        <img src={FilterIcon} alt="loading" />
+                        <div className="filter-text">Filters</div>
+                        {requestInfo.body &&
+                        requestInfo.body.selectedCustomFilters &&
+                        ((requestInfo.body.selectedCustomFilters.status &&
+                          requestInfo.body.selectedCustomFilters.status
+                            .length) ||
+                          (requestInfo.body.selectedCustomFilters
+                            .organization &&
+                            requestInfo.body.selectedCustomFilters.organization
+                              .length)) ? (
+                          <span>
+                            {requestInfo.body.selectedCustomFilters.status
+                              .length +
+                              requestInfo.body.selectedCustomFilters
+                                .organization.length}
+                          </span>
+                        ) : (
+                          ""
+                        )}
+                      </FilterIconContainer>
+                      {isFilters && (
+                        <FiltersResetContainer
+                          onClick={onresetFilters}
+                          className="open"
+                          title={isFilters ? "Reset Filters " : ""}
+                        >
+                          {/* <img src={ResetFilterIcon} alt="loading" /> */}
+                          <span className="clear-text">Clear</span>
+                        </FiltersResetContainer>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
             </ButtonsGroup>
           )}
-        </RightContent>
-      </SecondaryHeaderContainer>
-    </Fragment>
-  )
+        {pageLabel === "Past Due Invoices" && (
+          <ButtonsGroup>
+            {pastDueSyncpermissionObject.past_due_sync && (
+              <LinkWithIcon
+                onClick={() => {
+                  onPastDueReportSync();
+                }}
+              >
+                {!showAnimSync && (
+                  <>
+                    <ImgTag
+                      src={SyncLogo}
+                      className="save-view Export-Image"
+                      title={syncTitleHover}
+                    />
+                    <span className="link-icon-text" title={syncTitleHover}>
+                      Sync
+                    </span>
+                  </>
+                )}
+                {showAnimSync && (
+                  <>
+                    <AnimSyncImgTag
+                      src={AnimSyncLogo}
+                      className="save-view Export-Image"
+                      title="Syncing is in progress..."
+                      alt="loading"
+                    />
+                    <span
+                      className="link-icon-text"
+                      title="Syncing is in progress..."
+                    >
+                      Sync
+                    </span>
+                  </>
+                )}
+              </LinkWithIcon>
+            )}
+            <div style={{ display: "flex", gap: "4px" }}>
+              {pageLabel === "Past Due Invoices" && (
+                <>
+                  <FilterIconContainer
+                    onClick={() => setPastDueFilters(true)}
+                    className={isFilters ? "open" : ""}
+                    title={isFilters ? "Filters Applied" : ""}
+                  >
+                    <img src={FilterIcon} alt="loading" />
+                    <div className="filter-text">Filters</div>
+                    {requestInfo &&
+                    requestInfo.body &&
+                    requestInfo.body.selectedCustomFilters &&
+                    requestInfo.body.selectedCustomFilters.branch &&
+                    requestInfo.body.selectedCustomFilters.branch.length ? (
+                      <span>
+                        {requestInfo.body.selectedCustomFilters.branch.length}
+                      </span>
+                    ) : (
+                      ""
+                    )}
+                  </FilterIconContainer>
+                  {isFilters && (
+                    <FiltersResetContainer
+                      onClick={onresetFilters}
+                      className="open"
+                      title={isFilters ? "Reset Filters " : ""}
+                    >
+                      {/* <img src={ResetFilterIcon} alt="loading" /> */}
+                      <span className="clear-text">Clear</span>
+                    </FiltersResetContainer>
+                  )}
+                </>
+              )}
+            </div>
+          </ButtonsGroup>
+        )}
+      </RightContent>
+
+      <PiConfirmModel
+        className={openSyncModel ? "show" : ""}
+        headerLabel="Confirmation"
+        message={confirmText}
+        primaryBtnLabel="Accept"
+        secondaryBtnLabel="Decline"
+        onClose={() => {
+          setOpenSyncModel(false);
+        }}
+        onAccept={(e: any) => getConfirmModelEvent(e)}
+        onDecline={() => {
+          setOpenSyncModel(false);
+        }}
+      />
+
+      {showFilters && data === "Organizations" && (
+        <Suspense fallback={null}>
+          <OrganizationsFilter
+            requestInfo={requestInfo}
+            sendModelData={getOrganizationFilterEvent}
+          />
+        </Suspense>
+      )}
+
+      {showFilters && data === "Contacts" && (
+        <Suspense fallback={null}>
+          <ContactsFilter
+            requestInfo={requestInfo}
+            sendModelData={getOrganizationFilterEvent}
+          />
+        </Suspense>
+      )}
+      {openPastDueFilters && (
+        <Suspense fallback={null}>
+          <PastDueInvoiceFilter
+            requestInfo={requestInfo}
+            sendModelData={getOrganizationFilterEvent}
+          />
+        </Suspense>
+      )}
+    </SecondaryHeaderContainer>
+  );
 }

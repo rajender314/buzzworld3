@@ -1,7 +1,6 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, Fragment, useEffect } from 'react'
-import { Formik } from 'formik'
-import CrossLogo from '../../assets/images/cross.svg'
+/* eslint-disable no-use-before-define */
+import { useState, useEffect } from "react";
+import { Formik } from "formik";
 import {
   PiInputForm,
   PiTypography,
@@ -12,284 +11,341 @@ import {
   PiModalFooter,
   PiSelectForm,
   PiTextareaForm,
-} from 'pixel-kit'
+  PiInput,
+  PiSpinner,
+} from "pixel-kit";
 import {
   ApiResponse,
-  ReqInfoProps,
   FilterColumnProps,
   PiSelectProps,
   DynamicJsonValidProps,
-} from 'src/services/schema/schema'
-import { vendorValidations } from 'src/modules/vendor/validation/vendorValidations'
-import { FilterFormFields } from 'src/components/multiEditModel/multiEditModel.component'
-import EndpointUrl from 'src/core/apiEndpoints/endPoints'
-import { triggerApi } from 'src/services/api-services'
-import { CloseButton } from '../adminaddrowmodel/adminaddrowmodel.component'
-import { PopupHeaderDiv } from '../fileuploadModel/fileuploadModel.component'
+} from "@app/services/schema/schema";
+import vendorValidations from "@app/modules/vendor/validation/vendorValidations";
+import { FilterFormFields } from "@app/components/multiEditModel/multiEditModel.component";
+import EndpointUrl from "@app/core/apiEndpoints/endPoints";
+import { triggerApi } from "@app/services/api-services";
+import CrossLogo from "../../assets/images/cross.svg";
+import { CloseButton } from "../adminaddrowmodel/adminaddrowmodel.component";
+import {
+  PopupHeaderContentDiv,
+  PopupHeaderDiv,
+  SpinnerDiv,
+} from "../fileuploadModel/fileuploadModel.component";
 
-import { getLocalStorage } from 'src/core/localStorage/localStorage'
-type FileProps = {
-  success: boolean
-  vendor_id?: string
-}
-
-type Props = {
-  reqInfo: ReqInfoProps
-  onFileSelect: (e?: FileProps) => {}
-  paramData?: any
-}
-let info: ReqInfoProps
 export default function PricingAddRowModel({
   reqInfo,
   onFileSelect,
   paramData,
-}: Props) {
-  const [openModel, setOpenModel] = useState(false)
-  let [discountFilters, setdiscountFilters] = useState<PiSelectProps[]>([])
-  let [modelLabel, setModelLabel] = useState('Add Products')
-  let [serverMsg, setServerMsg] = useState(null)
+  branchValue,
+}: any) {
+  const [openModel, setOpenModel] = useState(false);
+  const [discountFilters, setdiscountFilters] = useState<PiSelectProps[]>([]);
+  const [modelLabel, setModelLabel] = useState("");
+  const [serverMsg, setServerMsg] = useState(null);
+  const [loading, setloading] = useState(true);
+  const [initialValues, setInitialValues] = useState<DynamicJsonValidProps>({
+    manufacturer_discount_id: "",
+    vendor_id: "",
+    stock_code: "",
+    list_price: "",
+    description: "",
+    product_class: "",
+  });
+  let gridDataById: any;
 
-  console.log(reqInfo)
-  let [initialValues, setInitialValues] = useState<DynamicJsonValidProps>({
-    manufacturer_discount_id: '',
-    stock_code: '',
-    list_price: '',
-    description: '',
-  })
-  //const initialValues = {
+  // const initialValues = {
   //  manufacturer_discount_id: '',
   //  stock_code: '',
   //  list_price: '',
   //  description: '',
-  //}
+  // }
+
   // console.log(userList);
   // userList = Promise.resolve(userList).then(function(results) {
   //   console.log(results);
   //   return results.users;
   // });
   useEffect(() => {
-    setOpenModel(true)
-  }, [])
-
-  useEffect(() => {
-    ;(async () => {
-      let data = getLocalStorage('requestInfo') as string
-      info = JSON.parse(data)
-
-      if (paramData) {
-        await getProductDetail()
-
-        getFilterData()
-        setModelLabel('Update Product')
-      } else {
-        getFilterData()
-        setModelLabel('Add Product')
-      }
-    })()
-  }, [])
-  let gridDataById: any
-
-  function getProductDetail() {
-    const apiObject = {
-      payload: {},
-      method: 'GET',
-      apiUrl: `${EndpointUrl.productsApi}/${paramData.id}?vendor_id=${info.body.vendor_id}&branch_id=${info.body.branch_id}&quantity=${paramData.quantity_id}&type=edit`,
-      headers: {},
-    }
-
-    triggerApi(apiObject)
-      .then((response: ApiResponse) => {
-        if (response.result.success) {
-          gridDataById = response.result.data
-          initialValues['manufacturer_discount_id'] = gridDataById.discount_code
-          initialValues['stock_code'] = gridDataById.name
-          initialValues['list_price'] = gridDataById.list_price
-          initialValues['description'] = gridDataById.description
-        }
-
-        setTimeout(() => {
-          setInitialValues(initialValues)
-          console.log(initialValues)
-        }, 1000)
-      })
-      .catch((err: string) => {
-        console.log(err)
-      })
-
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(gridDataById)
-      }, 100)
-    })
-  }
+    setOpenModel(true);
+  }, []);
   function getFilterData() {
     const apiObject = {
       payload: {},
-      method: 'GET',
-      apiUrl: `${EndpointUrl.filterDataApi}?name=pricing&vendor_id=${info.body.vendor_id}&branch_id=${info.body.branch_id}`,
+      method: "GET",
+      apiUrl: `${EndpointUrl.filterDataApi}?name=pricing&vendor_id=${reqInfo.body.vendor_id}&branch_id=${reqInfo.body.branch_id}`,
       headers: {},
-    }
+    };
 
     triggerApi(apiObject)
       .then((response: ApiResponse) => {
         if (response.result.success) {
-          let gridFilterData = response.result.data
-          let filters = []
-          filters = gridFilterData.filters.discount_code
-          discountFilters = filters.map((item: FilterColumnProps) => {
-            return {
-              value: item.id,
-              label: item.name,
-            }
-          })
-          setdiscountFilters(discountFilters)
+          const gridFilterData = response.result.data;
+          let filters = [];
+          filters = gridFilterData.filters.discount_code;
+          const list = filters.map((item: FilterColumnProps) => ({
+            value: item.id,
+            label: item.name,
+          }));
+          setdiscountFilters(list);
+          setTimeout(() => {
+            setloading(false);
+          }, 1000);
         }
       })
       .catch((err: string) => {
-        console.log(err)
-      })
+        console.log(err);
+      });
   }
+  function getProductDetail() {
+    const apiObject = {
+      payload: {},
+      method: "GET",
+      apiUrl: `${EndpointUrl.productsApi}/${paramData.id}?vendor_id=${reqInfo.body.vendor_id}&branch_id=${reqInfo.body.branch_id}&quantity=${paramData.quantity}&type=edit`,
+      headers: {},
+    };
+
+    triggerApi(apiObject)
+      .then(async (response: ApiResponse) => {
+        if (response.result.success) {
+          gridDataById = response.result.data;
+          initialValues.manufacturer_discount_id = gridDataById.discount_code;
+          initialValues.stock_code = gridDataById.name;
+          initialValues.list_price = gridDataById.list_price;
+          initialValues.description = gridDataById.description;
+          initialValues.vendor_id = paramData.vendor_id;
+          initialValues.product_class = gridDataById.product_class;
+        }
+        await setInitialValues(initialValues);
+        getFilterData();
+      })
+      .catch((err: string) => {
+        console.log(err);
+      });
+
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(gridDataById);
+      }, 100);
+    });
+  }
+  useEffect(() => {
+    (async () => {
+      // let data = getLocalStorage('requestInfo') as string
+      // info = JSON.parse(data)
+
+      if (paramData) {
+        setModelLabel("Update Product");
+        await getProductDetail();
+      } else {
+        setModelLabel("Add Product");
+        // setloading(false);
+        getFilterData();
+      }
+    })();
+  }, []);
 
   // const formik = useRef(null);
   // console.log(formik);
   function handleSubmit(data: any) {
-    console.log(data)
     // data.manufacturer_discount_id = data.manufacturer_discount_id.value;
-    data['vendor_id'] = info.body.vendor_id
-    data['branch_id'] = info.body.branch_id
+    data.vendor_id = reqInfo.body.vendor_id;
+    data.branch_id = reqInfo.body.branch_id;
     const apiObject = {
-      payload: data ? data : {},
-      method: paramData && paramData.id ? 'PUT' : 'POST',
+      payload: data || {},
+      method: paramData && paramData.id ? "PUT" : "POST",
       apiUrl:
         paramData && paramData.id
           ? `${EndpointUrl.productsApi}/${paramData.id}`
           : `${EndpointUrl.productsApi}`,
       headers: {},
-    }
-    console.log(data)
-
+    };
     triggerApi(apiObject)
       .then((response: ApiResponse) => {
         if (response.result.success) {
-          setServerMsg(null)
-          setOpenModel(false)
-          onFileSelect({ success: true, vendor_id: data['vendor_id'] })
+          setServerMsg(null);
+          setOpenModel(false);
+          onFileSelect({
+            success: true,
+            vendor_id: reqInfo.body.vendor_id,
+            branch_id: branchValue || reqInfo.body.branch_id,
+          });
         } else {
-          setServerMsg(response.result.data)
+          setServerMsg(response.result.data);
         }
       })
       .catch((err: string) => {
-        console.log(err)
-      })
+        console.log(err);
+      });
   }
 
-  function handleRef() {
-    // console.log(e);
+  function handleRef(e: any) {
+    console.log(e);
     // formik.current = e;
   }
   function closeModel() {
     // console.log(222);
-    setOpenModel(false)
-    let data = {
+    setOpenModel(false);
+    const data = {
       success: false,
-    }
-    onFileSelect(data)
+    };
+    onFileSelect(data);
   }
   return (
-    <Fragment>
-      <PiModal isOpen={openModel}>
+    <PiModal isOpen={openModel}>
+      <PopupHeaderContentDiv>
         <PiModalHeader>
           <PopupHeaderDiv>
-            {
-              <CloseButton
-                onClick={() => closeModel()}
-                title="close"
-                className="Hover"
-              >
-                {' '}
-                <img src={CrossLogo} alt="loading"></img>{' '}
-              </CloseButton>
-            }
-            <PiTypography component="h4">{modelLabel}</PiTypography>
-            <hr />
+            <PiTypography component="h3">{modelLabel}</PiTypography>
+            <CloseButton
+              onClick={() => closeModel()}
+              title="close"
+              className="Hover"
+            >
+              {" "}
+              <img src={CrossLogo} alt="loading" />{" "}
+            </CloseButton>
           </PopupHeaderDiv>
         </PiModalHeader>
-
+        <hr />
+      </PopupHeaderContentDiv>
+      {loading && (
+        <SpinnerDiv>
+          <PiSpinner color="primary" size={50} libraryType="atalskit" />
+        </SpinnerDiv>
+      )}
+      {!loading && (
         <Formik
           validationSchema={vendorValidations}
-          onSubmit={handleSubmit}
+          onSubmit={(e: any) => handleSubmit(e)}
           initialValues={initialValues}
-          innerRef={handleRef}
+          innerRef={(e: any) => handleRef(e)}
         >
-          {({ ...formik }: any) => {
-            return (
-              <>
-                <PiModalBody>
-                  <FilterForm
-                    data={discountFilters}
-                    initialValues={initialValues}
-                    paramData={paramData}
-                  />
-                </PiModalBody>
-                <PiModalFooter>
-                  {serverMsg && <div className="server-msg">{serverMsg}</div>}
-                  <PiButton
-                    appearance="secondary"
-                    label="Cancel"
-                    onClick={closeModel}
-                  />
-                  <PiButton
-                    appearance="primary"
-                    label={modelLabel}
-                    onClick={formik.handleSubmit}
-                  />
-                </PiModalFooter>
-              </>
-            )
-          }}
+          {({ ...formikProps }: any) => (
+            <>
+              <PiModalBody>
+                <FilterForm
+                  data2={discountFilters}
+                  initialValues={initialValues}
+                  paramData={paramData}
+                  reqInfo={reqInfo}
+                />
+              </PiModalBody>
+              <PiModalFooter>
+                {serverMsg && <div className="server-msg">{serverMsg}</div>}
+                <PiButton
+                  appearance="secondary"
+                  label="Cancel"
+                  onClick={() => closeModel()}
+                />
+                <PiButton
+                  appearance="primary"
+                  label={modelLabel}
+                  onClick={formikProps.handleSubmit}
+                />
+              </PiModalFooter>
+            </>
+          )}
         </Formik>
-      </PiModal>
-    </Fragment>
-  )
+      )}
+    </PiModal>
+  );
 }
 
-const FilterForm = ({ data, paramData, initialValues }: any) => {
+function FilterForm({ data2, paramData, reqInfo, initialValues }: any) {
+  const [productClassList, setProductClassList] = useState([]);
+
+  function getProductClassList() {
+    const apiObject = {
+      payload: {},
+      method: "GET",
+      apiUrl: `${EndpointUrl.PricingProductClass}?sort=asc`,
+      headers: {},
+    };
+
+    triggerApi(apiObject)
+      .then((response: ApiResponse) => {
+        if (response.result.success) {
+          const { data } = response.result;
+          setProductClassList(data);
+        }
+      })
+      .catch((err: string) => {
+        console.log(err);
+      });
+  }
+  useEffect(() => {
+    getProductClassList();
+  }, []);
+
   return (
     <FilterFormFields>
-      <>
-        <div className="Discount-dropdown">
+      <div className="Feilds">
+        <div className="TwoInput">
+          <PiInput
+            name="vendor_id"
+            label="Vendor"
+            libraryType="atalskit"
+            type="text"
+            isDisabled
+            placeholder="Vendor"
+            value={paramData ? paramData.vendor_name : reqInfo.body.vendor_name}
+          />
+          <PiInputForm
+            name="stock_code"
+            label="Stock Code"
+            libraryType="atalskit"
+            type="text"
+            placeholder="Enter Stock Code"
+            isDisabled={!!paramData}
+            isMandatory
+            maxLength={45}
+          />
+        </div>
+        <div className="TwoInput">
+          <div style={{ width: "100%", maxWidth: "calc(50% - 8px)" }}>
+            <PiSelectForm
+              name="manufacturer_discount_id"
+              label="Discount Code"
+              placeholder="Select"
+              isMulti={false}
+              options={data2}
+              classNamePrefix="react-select"
+              isMandatory
+              // value="dsdds"
+            />
+          </div>
+          <PiInputForm
+            name="list_price"
+            label="List Price"
+            libraryType="atalskit"
+            type="string"
+            placeholder="Enter List Price"
+            isMandatory
+          />
+        </div>
+
+        <div className="TwoInput" style={{ width: "calc(50% - 7px)" }}>
           <PiSelectForm
-            name="manufacturer_discount_id"
-            label="Discount Code"
-            placeholder="Discount Code"
+            name="product_class"
+            label="Product Class"
+            placeholder="Select"
             isMulti={false}
-            options={data}
+            options={productClassList}
+            classNamePrefix="react-select"
+            isMandatory
             // value="dsdds"
           />
         </div>
-        <PiInputForm
-          name="stock_code"
-          label="Stock Code"
-          libraryType="atalskit"
-          type="text"
-          placeholder="Stock Code"
-          isDisabled={paramData ? true : false}
-        />
-        <PiInputForm
-          name="list_price"
-          label="List Price"
-          libraryType="atalskit"
-          type="text"
-          placeholder="List Price"
-        />
+
         <PiTextareaForm
           name="description"
           label="Description"
           libraryType="atalskit"
-          placeholder="Description"
+          placeholder="Enter Description"
           defaultValue={initialValues.description}
+          maxLength={255}
         />
-      </>
+      </div>
     </FilterFormFields>
-  )
+  );
 }

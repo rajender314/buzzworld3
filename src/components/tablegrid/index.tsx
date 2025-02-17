@@ -1,1 +1,4 @@
-export { default } from "./tablegrid";
+// export { default } from './tablegrid';
+import TableGrid from "./tablegrid";
+
+export default TableGrid;
